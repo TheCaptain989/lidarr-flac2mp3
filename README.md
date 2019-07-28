@@ -6,7 +6,7 @@ Lidarr with a script to automatically convert FLAC files to 320Kbps MP3s. MP3s a
 # First Things First
 
 Configure the container with all the port, volume, and environment settings from the original container documentation here:  
-**[linuxserver/radarr](https://hub.docker.com/r/linuxserver/radarr)**
+**[linuxserver/lidarr](https://hub.docker.com/r/linuxserver/lidarr)**
 
 ## Usage
 
