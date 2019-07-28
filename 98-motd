@@ -1,0 +1,3 @@
+#!/usr/bin/with-contenv bash
+
+echo '>>> Modded by TheCaptain989 <<<'
