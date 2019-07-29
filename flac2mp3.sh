@@ -4,7 +4,7 @@ LOG=/config/logs/flac2mp3.txt
 MAXLOGSIZE=1048576
 MAXLOG=4
 TRACKS="$lidarr_addedpaths"
-[ -z "TRACKS" ] && TRACKS="$lidarr_trackfile_path"      # For other event type
+[ -z "$TRACKS" ] && TRACKS="$lidarr_trackfile_path"      # For other event type
 
 # For debug purposes only
 #ENVLOG=/config/logs/debugenv.txt
