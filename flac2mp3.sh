@@ -3,7 +3,7 @@
 LOG=/config/logs/flac2mp3.txt
 MAXLOGSIZE=1048576
 MAXLOG=4
-TRACKS="$lidarr_addedpaths"
+TRACKS="$lidarr_addedtrackpaths"
 [ -z "$TRACKS" ] && TRACKS="$lidarr_trackfile_path"      # For other event type
 
 # For debug purposes only
@@ -45,15 +45,22 @@ echo "Lidarr event: $lidarr_eventtype|Artist: $lidarr_artist_name|Using: $TRACKS
 echo "$TRACKS" | awk '
 BEGIN {
   FFMpeg="/usr/bin/ffmpeg"
+  FS="|"
   RS="|"
   IGNORECASE=1
 }
 /\.flac/ {
   Track=$1
+  sub(/\n/,"",Track)
   NewTrack=substr(Track, 1, length(Track)-5)".mp3"
   print "Executing: "FFMpeg" -loglevel warning -i \""Track"\" -y -acodec libmp3lame -b:a 320k \""NewTrack"\""
   Result=system(FFMpeg" -loglevel warning -i \""Track"\" -y -acodec libmp3lame -b:a 320k \""NewTrack"\"")
-  if (Result>1) print "ERROR: "Result" converting \""Track"\""
+  if (Result>0){
+    print "ERROR: "Result" converting \""Track"\""
+  } else {
+    print "Deleting: \""Track"\""
+    system("[ -f \""Track"\" ] && rm \""Track"\"")
+  }
 }' | log
 
 echo "Done" | log
