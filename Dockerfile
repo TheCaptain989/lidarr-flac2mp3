@@ -6,13 +6,13 @@ LABEL maintainer="TheCaptain989"
 # Build arguments
 ARG BUILD_DATE
 ARG VCS_REF
-ARG VERSION=1.0
+ENV TC9_VERSION=1.0.1
 
 # Build-time metadata as defined at http://label-schema.org
 LABEL org.label-schema.name="thecaptain989/lidarr" \
       org.label-schema.description="The LinuxServer.io Lidarr container plus ffmpeg and script for converting FLAC files to MP3" \
       org.label-schema.url="https://hub.docker.com/r/thecaptain989/lidarr" \
-      org.label-schema.version=$VERSION \
+      org.label-schema.version=$TC9_VERSION \
       org.label-schema.build-date=$BUILD_DATE \
       org.label-schema.vendor="TheCaptain989" \
       org.label-schema.schema-version="1.0" \
@@ -23,7 +23,7 @@ LABEL org.label-schema.name="thecaptain989/lidarr" \
 LABEL org.opencontainers.image.title="thecaptain989/lidarr" \
       org.opencontainers.image.description="The LinuxServer.io Lidarr container plus ffmpeg and script for converting FLAC files to MP3" \
       org.opencontainers.image.url="https://hub.docker.com/r/thecaptain989/lidarr" \
-      org.opencontainers.image.version=$VERSION \
+      org.opencontainers.image.version=$TC9_VERSION \
       org.opencontainers.image.created=$BUILD_DATE \
       org.opencontainers.image.vendor="TheCaptain989" \
       org.opencontainers.image.source="https://github.com/TheCaptain989/lidarr-flac2mp3" \
