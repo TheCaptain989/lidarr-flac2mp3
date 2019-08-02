@@ -1,3 +1,4 @@
 #!/usr/bin/with-contenv bash
 
 echo '>>> Modded by TheCaptain989 <<<'
+echo "Version: $TC9_VERSION"

@@ -1,7 +1,7 @@
 [![](https://images.microbadger.com/badges/image/thecaptain989/lidarr.svg)](https://microbadger.com/images/thecaptain989/lidarr "Get your own image badge on microbadger.com")
 [![](https://images.microbadger.com/badges/version/thecaptain989/lidarr.svg)](https://microbadger.com/images/thecaptain989/lidarr "Get your own version badge on microbadger.com")
 
-Lidarr with a script to automatically convert FLAC files to 320Kbps MP3s. MP3s are fully tagged by ffmpeg.
+Lidarr with a script to automatically convert FLAC files to 320Kbps MP3s. MP3s are fully ID3 tagged by ffmpeg.
 
 # First Things First
 
@@ -30,6 +30,8 @@ A new log file is created for the script activity called:
 `/config/logs/flac2mp3.txt`
 
 This log can be inspected from the GUI under System->Log Files
+
+Log rotation is performed, with 5 log files of 1MB each kept, matching Lidarr's log retention.
 
 ## Credits
 
