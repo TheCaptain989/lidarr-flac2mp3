@@ -1,0 +1,6 @@
+# Docker ignore file
+.git
+.gitignore
+hooks
+images
+README.md
