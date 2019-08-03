@@ -2,18 +2,21 @@
 # hooks/build
 # https://docs.docker.com/docker-cloud/builds/advanced/
 
+VERSION=$(git describe --tags --always)
 VCS_REF=$(git rev-parse --short HEAD)
 BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
 # $IMAGE_NAME and $DOCKERFILE_PATH vars are injected into the build by the automated build service. 
 echo "[TC989] Build hook running"
 echo "Hook variables:"
+echo "VERSION=$VERSION"
 echo "VCS_REF=$VCS_REF"
 echo "BUILD_DATE=$BUILD_DATE"
 echo "DOCKERFILE_PATH=$DOCKERFILE_PATH"
 echo "IMAGE_NAME=$IMAGE_NAME"
 
-docker build --build-arg VCS_REF=$VCS_REF \
+docker build --build-arg VERSION=$VERSION \
+             --build-arg VCS_REF=$VCS_REF \
              --build-arg BUILD_DATE=$BUILD_DATE \
              --file $DOCKERFILE_PATH \
              --tag $IMAGE_NAME .
