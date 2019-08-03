@@ -84,7 +84,7 @@ then
   
   echo "Calling Lidarr API using artist id '$lidarr_artist_id' and URL 'http://$BINDADDRESS:$PORT$URLBASE/api/v1/command?apikey=$APIKEY'" | log
   # Calling API
-  RESULT=$(curl -s -d '{name: "RescanArtist", artistId: "$lidarr_artist_id"}' -H "Content-Type: application/json" \
+  RESULT=$(curl -s -d "{name: 'RescanArtist', artistId: $lidarr_artist_id}" -H "Content-Type: application/json" \
     -X POST http://$BINDADDRESS:$PORT$URLBASE/api/v1/command?apikey=$APIKEY | jq -c '. | {JobId: .id, ArtistId: .body.artistId, Message: .body.completionMessage, DateStarted: .queued}')
   echo "API returned: $RESULT" | log
 else
