@@ -65,6 +65,19 @@ BEGIN {
     print "Deleting: \""Track"\""
     system("[ -s \""NewTrack"\" ] && [ -f \""Track"\" ] && rm \""Track"\"")
   }
+}
+/\.mp3/ {
+  Track=$1
+  sub(/\n/,"",Track)
+  TmpTrack=substr(Track, 1, length(Track)-4)".tmp"
+  print "Executing: "FFMpeg" -loglevel warning -i \""Track"\" "CoverCmds1"-map 0 -y -acodec copy -write_id3v1 1 -id3v2_version 3 "CoverCmds2"-f mp3 \""TmpTrack"\""
+  Result=system(FFMpeg" -loglevel warning -i \""Track"\" "CoverCmds1"-map 0 -y -acodec copy -write_id3v1 1 -id3v2_version 3 "CoverCmds2"-f mp3 \""TmpTrack"\" 2>&1")
+  if (Result) {
+    print "ERROR: "Result" converting \""Track"\""
+  } else {
+    print "Deleting: \""Track"\" and Renaming: \""TmpTrack"\""
+    system("[ -s \""TmpTrack"\" ] && [ -f \""Track"\" ] && rm \""Track"\" && mv \""TmpTrack"\" \""Track"\"")
+  }
 }' | log
 
 # Call Lidarr API to RescanArtist
