@@ -14,7 +14,9 @@ After all of the above configuration is complete, to use ffmpeg, configure a cus
 
 **`/usr/local/bin/flac2mp3.sh`**
 
-**NOTE:** The original audio files will be deleted and permanently lost.
+New track file(s) with an MP3 extension will be placed in the same directory as the original FLAC file(s). Existing MP3 files with the same track name will be overwritten.
+
+**NOTE:** The original FLAC audio file(s) will be deleted and permanently lost.
 
 ### Syntax
 
