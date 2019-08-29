@@ -7,11 +7,6 @@ MAXLOG=4
 TRACKS="$lidarr_addedtrackpaths"
 [ -z "$TRACKS" ] && TRACKS="$lidarr_trackfile_path"      # For other event type
 
-# For debug purposes only
-#ENVLOG=/config/logs/debugenv.txt
-#echo --------$(date +"%F %T")-------- >>"$ENVLOG"
-#printenv | sort >>"$ENVLOG"
-
 # Can still go over MAXLOG if read line is too long
 #  Must include whole function in subshell for read to work!
 function log {(
@@ -30,6 +25,32 @@ function log {(
   done
 )}
 
+# Process options
+while getopts ":db:" opt; do
+  case ${opt} in
+    d ) # For debug purposes only
+      MSG="DEBUG: Enabling debug logging."
+      echo "$MSG" | log
+      echo "$MSG"
+      ENVLOG=/config/logs/debugenv.txt
+      echo "--------$(date +"%F %T")--------" >>"$ENVLOG"
+      printenv | sort >>"$ENVLOG"
+      ;;
+    b ) # Set bitrate
+      BITRATE="$OPTARG"
+      ;;
+    : )
+      MSG="Invalid option: -$OPTARG requires an argument"
+      echo "$MSG" | log
+      echo "$MSG"
+      ;;
+  esac
+done
+shift $((OPTIND -1))
+
+# Set default bitrate
+[ -z "$BITRATE" ] && BITRATE="320k"
+
 if [ -z "$TRACKS" ]; then
   MSG="ERROR: No track file(s) specified! Not called from Lidarr?"
   echo "$MSG" | log
@@ -40,7 +61,8 @@ fi
 # Legacy script
 #find "$lidarr_artist_path" -name "*.flac" -exec bash -c 'ffmpeg -loglevel warning -i "{}" -y -acodec libmp3lame -b:a 320k "${0/.flac}.mp3" && rm "{}"' {} \;
 
-echo "Lidarr event: $lidarr_eventtype|Artist: $lidarr_artist_name|Artist ID: $lidarr_artist_id|Album ID: $lidarr_album_id|Using: $TRACKS" | log
+echo "Lidarr event: $lidarr_eventtype|Artist: $lidarr_artist_name|Artist ID: $lidarr_artist_id|Album ID: $lidarr_album_id|Tracks: $TRACKS" | log
+echo "Export bitrate: $BITRATE" | log
 echo "$TRACKS" | awk '
 BEGIN {
   FFMpeg="/usr/bin/ffmpeg"
@@ -57,8 +79,8 @@ BEGIN {
   Track=$1
   sub(/\n/,"",Track)
   NewTrack=substr(Track, 1, length(Track)-5)".mp3"
-  print "Executing: "FFMpeg" -loglevel warning -i \""Track"\" "CoverCmds1"-map 0 -y -acodec libmp3lame -b:a 320k -write_id3v1 1 -id3v2_version 3 "CoverCmds2"\""NewTrack"\""
-  Result=system(FFMpeg" -loglevel warning -i \""Track"\" "CoverCmds1"-map 0 -y -acodec libmp3lame -b:a 320k -write_id3v1 1 -id3v2_version 3 "CoverCmds2"\""NewTrack"\" 2>&1")
+  print "Executing: "FFMpeg" -loglevel warning -i \""Track"\" "CoverCmds1"-map 0 -y -acodec libmp3lame -b:a '$BITRATE' -write_id3v1 1 -id3v2_version 3 "CoverCmds2"\""NewTrack"\""
+  Result=system(FFMpeg" -loglevel warning -i \""Track"\" "CoverCmds1"-map 0 -y -acodec libmp3lame -b:a '$BITRATE' -write_id3v1 1 -id3v2_version 3 "CoverCmds2"\""NewTrack"\" 2>&1")
   if (Result) {
     print "ERROR: "Result" converting \""Track"\""
   } else {
@@ -99,7 +121,7 @@ if [ ! -z "$lidarr_artist_id" ]; then
     
     [[ $BINDADDRESS = "*" ]] && BINDADDRESS=localhost
     
-    echo "Calling Lidarr API using artist id '$lidarr_artist_id' and URL 'http://$BINDADDRESS:$PORT$URLBASE/api/v1/command?apikey=$APIKEY'" | log
+    echo "Calling Lidarr API 'RescanArtist' using artist id '$lidarr_artist_id' and URL 'http://$BINDADDRESS:$PORT$URLBASE/api/v1/command?apikey=$APIKEY'" | log
     # Calling API
     RESULT=$(curl -s -d "{name: 'RescanArtist', artistId: $lidarr_artist_id}" -H "Content-Type: application/json" \
       -X POST http://$BINDADDRESS:$PORT$URLBASE/api/v1/command?apikey=$APIKEY | jq -c '. | {JobId: .id, ArtistId: .body.artistId, Message: .body.completionMessage, DateStarted: .queued}')
