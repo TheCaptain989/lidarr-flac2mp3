@@ -2,7 +2,7 @@
 
 LIDARR_CONFIG=/config/config.xml
 LOG=/config/logs/flac2mp3.txt
-MAXLOGSIZE=1048576
+MAXLOGSIZE=1024000
 MAXLOG=4
 TRACKS="$lidarr_addedtrackpaths"
 [ -z "$TRACKS" ] && TRACKS="$lidarr_trackfile_path"      # For other event type
@@ -20,6 +20,7 @@ function log {(
       do
         [ -f "${LOG::-4}.$i.txt" ] && mv "${LOG::-4}."{$i,$((i+1))}".txt"
       done
+        [ -f "${LOG::-4}.txt" ] && mv "${LOG::-4}.txt" "${LOG::-4}.0.txt"
       touch "$LOG"
     fi
   done
