@@ -52,6 +52,12 @@ shift $((OPTIND -1))
 # Set default bitrate
 [ -z "$BITRATE" ] && BITRATE="320k"
 
+if [[ "$lidarr_eventtype" -eq "Test" ]]; then
+  echo "Lidarr event: $lidarr_eventtype" | log
+  echo "Script was test executed successfully." | log
+  exit 0
+fi
+
 if [ -z "$TRACKS" ]; then
   MSG="ERROR: No track file(s) specified! Not called from Lidarr?"
   echo "$MSG" | log
