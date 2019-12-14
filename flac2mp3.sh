@@ -52,7 +52,7 @@ shift $((OPTIND -1))
 # Set default bitrate
 [ -z "$BITRATE" ] && BITRATE="320k"
 
-if [[ "$lidarr_eventtype" -eq "Test" ]]; then
+if [[ "$lidarr_eventtype" = "Test" ]]; then
   echo "Lidarr event: $lidarr_eventtype" | log
   echo "Script was test executed successfully." | log
   exit 0
