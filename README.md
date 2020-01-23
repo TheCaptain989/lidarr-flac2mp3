@@ -25,13 +25,16 @@ The `-b bitrate` option, if specified, sets the output quality in bits per secon
 
 The `-d` option enables debug logging.
 
-### Examples
-    -b 320k        # Output 320 kilobits per second MP3 (same as default behavior)
-    -d -b 160k     # Enable debugging, and output 160 kilobits per second MP3
+#### Examples
+```
+-b 320k        # Output 320 kilobits per second MP3 (same as default behavior)
+-d -b 160k     # Enable debugging, and output 160 kilobits per second MP3
+```
 
-   NOTE: The **Arguments** field for Custom Scripts was removed in Lidarr release [v0.7.0.1347](https://github.com/lidarr/Lidarr/commit/b9d240924f8965ebb2c5e307e36b810ae076101e "Lidarr commit notes") due to security concerns.
+**Note:** The **Arguments** field for Custom Scripts was removed in Lidarr release [v0.7.0.1347](https://github.com/lidarr/Lidarr/commit/b9d240924f8965ebb2c5e307e36b810ae076101e "Lidarr commit notes") due to security concerns.
+To support options with this version and later, a wrapper script can be manually created that will call *flac2mp3.sh* with the required arguments.
 
-### Triggers
+#### Triggers
 The only events/notification triggers that have been tested are **On Release Import** and **On Upgrade**
 
 ![lidarr-flac2mp3](https://raw.githubusercontent.com/TheCaptain989/lidarr-flac2mp3/master/images/flac2mp3.png "Lidarr Custom Script dialog")
