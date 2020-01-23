@@ -1,7 +1,7 @@
 [![](https://images.microbadger.com/badges/image/thecaptain989/lidarr.svg)](https://microbadger.com/images/thecaptain989/lidarr "Get your own image badge on microbadger.com")
 [![](https://images.microbadger.com/badges/version/thecaptain989/lidarr.svg)](https://microbadger.com/images/thecaptain989/lidarr "Get your own version badge on microbadger.com")
 
-Lidarr with a script to automatically convert FLAC files to MP3s. Downloaded MP3s are copied with original quality (i.e. not converted). MP3s are fully ID3 tagged by ffmpeg.
+Lidarr with a script to automatically convert downloaded FLAC files to MP3s. Downloaded MP3s are copied with original quality (i.e. not converted). Resulting MP3s are fully ID3 tagged by ffmpeg.
 
 # First Things First
 Configure the container with all the port, volume, and environment settings from the original container documentation here:  
