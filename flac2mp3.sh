@@ -128,10 +128,10 @@ if [ ! -z "$lidarr_artist_id" ]; then
     
     [[ $BINDADDRESS = "*" ]] && BINDADDRESS=localhost
     
-    echo "Calling Lidarr API 'RescanArtist' using artist id '$lidarr_artist_id' and URL 'http://$BINDADDRESS:$PORT$URLBASE/api/v1/command?apikey=$APIKEY'" | log
+    echo "Calling Lidarr API 'RefreshArtist' using artist id '$lidarr_artist_id' and URL 'http://$BINDADDRESS:$PORT$URLBASE/api/v1/command?apikey=$APIKEY'" | log
     # Calling API
-    RESULT=$(curl -s -d "{name: 'RescanArtist', artistId: $lidarr_artist_id}" -H "Content-Type: application/json" \
-      -X POST http://$BINDADDRESS:$PORT$URLBASE/api/v1/command?apikey=$APIKEY | jq -c '. | {JobId: .id, ArtistId: .body.artistId, Message: .body.completionMessage, DateStarted: .queued}')
+    RESULT=$(curl -s -d "{name: 'RefreshArtist', artistId: $lidarr_artist_id}" -H "Content-Type: application/json" \
+      -X POST http://$BINDADDRESS:$PORT$URLBASE/api/v1/command?apikey=$APIKEY | jq -c '. | {JobId: .id, ArtistId: .body.artistId, Message: .status, DateStarted: .queued}')
     echo "API returned: $RESULT" | log
   else
     echo "ERROR: Unable to locate Lidarr config file: '$LIDARR_CONFIG'" | log
