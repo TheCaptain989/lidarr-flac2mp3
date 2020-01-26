@@ -7,6 +7,8 @@ Lidarr with a script to automatically convert downloaded FLAC files to MP3s. It 
 Configure the container with all the port, volume, and environment settings from the original container documentation here:  
 **[linuxserver/lidarr](https://hub.docker.com/r/linuxserver/lidarr "Docker container")**
 
+This container supports Linux OSes only.
+
 ## Usage
 After all of the above configuration is complete, to use ffmpeg, configure a custom script from the Settings->Connect screen and type the following in the **Path** field:
 
