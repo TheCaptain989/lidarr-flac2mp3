@@ -20,7 +20,7 @@ New track file(s) with an MP3 extension will be placed in the same directory as 
 **Note:** The **Arguments** field for Custom Scripts was removed in Lidarr release [v0.7.0.1347](https://github.com/lidarr/Lidarr/commit/b9d240924f8965ebb2c5e307e36b810ae076101e "Lidarr commit notes") due to security concerns.
 To support options with this version and later, a wrapper script can be manually created that will call *flac2mp3.sh* with the required arguments. Therefore, this section is for legacy and advanced purposes only.
 
-The script accepts two options which may be palced in the **Arguments** field:
+The script accepts two options which may be placed in the **Arguments** field:
 
 `[-d] [-b <bitrate>]`
 
