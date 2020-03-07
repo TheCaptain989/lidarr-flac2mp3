@@ -1,5 +1,20 @@
 #!/bin/bash
 
+# Script to convert FLAC files to MP3 using FFMpeg
+#  https://github.com/TheCaptain989/lidarr-flac2mp3
+# Can also process MP3s and tag them appropriately
+# Resultant MP3s are fully tagged
+
+# Dependencies:
+#  ffmpeg
+#  awk
+
+# Exit codes:
+#  0 - success
+#  1 - no tracks files specified on command line
+# 11 - success, but unable to access Lidarr API due to missing Artist ID
+# 12 - success, but unable to access Lidarr API due to missing config file
+
 LIDARR_CONFIG=/config/config.xml
 LOG=/config/logs/flac2mp3.txt
 MAXLOGSIZE=1024000
@@ -65,7 +80,7 @@ if [ -z "$TRACKS" ]; then
   exit 1
 fi
 
-# Legacy script
+# Legacy one-liner script
 #find "$lidarr_artist_path" -name "*.flac" -exec bash -c 'ffmpeg -loglevel warning -i "{}" -y -acodec libmp3lame -b:a 320k "${0/.flac}.mp3" && rm "{}"' {} \;
 
 echo "Lidarr event: $lidarr_eventtype|Artist: $lidarr_artist_name|Artist ID: $lidarr_artist_id|Album ID: $lidarr_album_id|Tracks: $TRACKS" | log
