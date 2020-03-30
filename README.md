@@ -1,10 +1,10 @@
 [![](https://images.microbadger.com/badges/image/thecaptain989/lidarr.svg)](https://microbadger.com/images/thecaptain989/lidarr "Get your own image badge on microbadger.com")
 [![](https://images.microbadger.com/badges/version/thecaptain989/lidarr.svg)](https://microbadger.com/images/thecaptain989/lidarr "Get your own version badge on microbadger.com")
 
-Lidarr with a script to automatically convert downloaded FLAC files to MP3s. It also handles downloaded MP3s, which are copied with original quality (i.e. not converted). Resulting MP3s are fully ID3 tagged by ffmpeg.
+A Lidarr Docker container with a script to automatically convert downloaded FLAC files to MP3s using ffmpeg. It also handles downloaded MP3s, which are copied with original quality (i.e. not converted). Resulting MP3s are fully ID3 tagged by ffmpeg.
 
 # First Things First
-Configure the container with all the port, volume, and environment settings from the original container documentation here:  
+Configure the Docker container with all the port, volume, and environment settings from the original container documentation here:  
 **[linuxserver/lidarr](https://hub.docker.com/r/linuxserver/lidarr "Docker container")**
 
 This container supports Linux OSes only.
@@ -37,12 +37,18 @@ The `-d` option enables debug logging.
 ```
 
 #### Example Wrapper Script
-To use the example options above, create and save the following text in a file called *wrapper.sh* and then use that in the **Path** field in place of *flac2mp3.sh* in the Custom Script dialog from the Settings->Connect screen.
+To use the example options above, create and save the following text in a file called `wrapper.sh` and then use that in the **Path** field in place of `flac2mp3.sh` mentioned in the [Usage](./README.md#usage) section above.
 ```
 #!/bin/bash
 
 . /usr/local/bin/flac2mp3.sh -d -b 160k
 ```
+
+#### Included Wrapper Script
+An wrapper script to enable debugging is included in the Docker container.  
+Use this script in place of the `flac2mp3.sh` mentioned in the [Usage](./README.md#usage) section above.
+
+**`/usr/local/bin/flac2mp3-debug.sh`**
 
 ### Triggers
 The only events/notification triggers that have been tested are **On Release Import** and **On Upgrade**
@@ -54,15 +60,11 @@ A log file is created for the script activity called:
 
 `/config/logs/flac2mp3.txt`
 
-This log can be inspected from the GUI under System->Log Files
+This log can be downlaoded from the Lidarr GUI under System->Log Files
 
 Log rotation is performed, with 5 log files of 1MB each kept, matching Lidarr's log retention.
 
-If debug logging is enabled, the following log file is also created:
-
-`/config/logs/debugenv.txt`
-
-**This log file will grow indefinitely!** Do not leave debugging enabled permanently.
+If debug logging is enabled, the log file can grow very large very quickly.
 
 ## Credits
 This would not be possible without the following:
