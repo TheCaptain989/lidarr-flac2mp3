@@ -46,7 +46,7 @@ To use the example options above, create and save the following text in a file c
 
 #### Included Wrapper Script
 An wrapper script to enable debugging is included in the Docker container.  
-Use this script in place of the `flac2mp3.sh` in the [Usage](./#Usage) section above.
+Use this script in place of the `flac2mp3.sh` in the [Usage](./README.md#Usage) section above.
 
 **`/usr/local/bin/flac2mp3-debug.sh`**
 
