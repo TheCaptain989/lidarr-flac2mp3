@@ -23,6 +23,12 @@ MAXLOG=4
 DEBUG=0
 TRACKS="$lidarr_addedtrackpaths"
 [ -z "$TRACKS" ] && TRACKS="$lidarr_trackfile_path"      # For other event type
+RECYCLEBIN=$(python -c "import sqlite3
+conSql = sqlite3.connect('/config/lidarr.db')
+cursorObj = conSql.cursor()
+cursorObj.execute('SELECT Value from Config WHERE Key=\"recyclebin\"')
+print(cursorObj.fetchone()[0])
+conSql.close()")
 
 function usage {
   usage="
@@ -111,47 +117,38 @@ fi
 # Legacy one-liner script
 #find "$lidarr_artist_path" -name "*.flac" -exec bash -c 'ffmpeg -loglevel warning -i "{}" -y -acodec libmp3lame -b:a 320k "${0/.flac}.mp3" && rm "{}"' {} \;
 
-echo "Info|Lidarr event: $lidarr_eventtype, Artist: $lidarr_artist_name, Artist ID: $lidarr_artist_id, Album ID: $lidarr_album_id, Export bitrate: $BITRATE, Tracks: $TRACKS" | log
-echo "$TRACKS" | awk -v Debug=$Debug '
+echo "Info|Lidarr event: $lidarr_eventtype, Artist: $lidarr_artist_name ($lidarr_artist_id), Album: $lidarr_album_title ($lidarr_album_id), Export bitrate: $BITRATE, Tracks: $TRACKS" | log
+echo "$TRACKS" | awk -v Debug=$Debug -v Recycle="$RECYCLEBIN" -v Bitrate=$BITRATE '
 BEGIN {
   FFMpeg="/usr/bin/ffmpeg"
   FS="|"
   RS="|"
   IGNORECASE=1
-  Cover="/config/MediaCover/Albums/'$lidarr_album_id'/cover.jpg"
-  if (system("[ -f \""Cover"\" ]") == 0){
-    CoverCmds1="-i \""Cover"\" -map 1 "
-    CoverCmds2="-vcodec:v:1 copy -metadata:s:v title=\"Album cover\" -metadata:s:v comment=\"Cover (front)\" "
-  }
 }
 /\.flac/ {
   Track=$1
   sub(/\n/,"",Track)
   NewTrack=substr(Track, 1, length(Track)-5)".mp3"
   print "Info|Writing: "NewTrack
-  if (Debug) print "Debug|Executing: "FFMpeg" -loglevel warning -i \""Track"\" "CoverCmds1"-map 0 -y -acodec libmp3lame -b:a '$BITRATE' -write_id3v1 1 -id3v2_version 3 "CoverCmds2"\""NewTrack"\""
-  Result=system(FFMpeg" -loglevel warning -i \""Track"\" "CoverCmds1"-map 0 -y -acodec libmp3lame -b:a '$BITRATE' -write_id3v1 1 -id3v2_version 3 "CoverCmds2"\""NewTrack"\" 2>&1")
+  if (Debug) print "Debug|Executing: "FFMpeg" -loglevel error -i \""Track"\" "CoverCmds1"-map 0 -y -acodec libmp3lame -b:a "Bitrate" -write_id3v1 1 -id3v2_version 3 "CoverCmds2"\""NewTrack"\""
+  Result=system(FFMpeg" -loglevel error -i \""Track"\" "CoverCmds1"-map 0 -y -acodec libmp3lame -b:a "Bitrate" -write_id3v1 1 -id3v2_version 3 "CoverCmds2"\""NewTrack"\" 2>&1")
   if (Result) {
     print "Error|"Result" converting \""Track"\""
   } else {
-    if (Debug) print "Debug|Deleting: \""Track"\""
-    system("[ -s \""NewTrack"\" ] && [ -f \""Track"\" ] && rm \""Track"\"")
+    if (Recycle=="") {
+      if (Debug) print "Debug|Deleting: \""Track"\""
+      system("[ -s \""NewTrack"\" ] && [ -f \""Track"\" ] && rm \""Track"\"")
+    } else {
+      match(Track,/^\/?[^\/]+\//)
+      RecPath=substr(Track,RSTART+RLENGTH)
+      sub(/[^\/]+$/,"",RecPath)
+      RecPath=Recycle RecPath
+      if (Debug) print "Debug|Moving: \""Track"\" to \""RecPath"\""
+      system("[ ! -e \""RecPath"\" ] && mkdir -p \""RecPath"\"; [ -s \""NewTrack"\" ] && [ -f \""Track"\" ] && mv -t \""RecPath"\" \""Track"\"")
+    }
   }
 }
-/\.mp3/ {
-  Track=$1
-  sub(/\n/,"",Track)
-  TmpTrack=substr(Track, 1, length(Track)-4)".tmp"
-  print "Info|Retagging: "Track
-  if (Debug) print "Debug|Executing: "FFMpeg" -loglevel warning -i \""Track"\" "CoverCmds1"-map 0 -y -acodec copy -write_id3v1 1 -id3v2_version 3 "CoverCmds2"-f mp3 \""TmpTrack"\""
-  Result=system(FFMpeg" -loglevel warning -i \""Track"\" "CoverCmds1"-map 0 -y -acodec copy -write_id3v1 1 -id3v2_version 3 "CoverCmds2"-f mp3 \""TmpTrack"\" 2>&1")
-  if (Result) {
-    print "Error|"Result" converting \""Track"\""
-  } else {
-    if (Debug) print "Debug|Deleting: \""Track"\" and Renaming: \""TmpTrack"\""
-    system("[ -s \""TmpTrack"\" ] && [ -f \""Track"\" ] && rm \""Track"\" && mv \""TmpTrack"\" \""Track"\"")
-  }
-}' | log
+' | log
 
 # Call Lidarr API to RescanArtist
 if [ ! -z "$lidarr_artist_id" ]; then
