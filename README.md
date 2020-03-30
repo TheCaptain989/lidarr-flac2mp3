@@ -61,7 +61,7 @@ A log file is created for the script activity called:
 
 `/config/logs/flac2mp3.txt`
 
-This log can be downlaoded from the Lidarr GUI under System->Log Files
+This log can be downloaded from the Lidarr GUI under System->Log Files
 
 Log rotation is performed, with 5 log files of 1MB each kept, matching Lidarr's log retention.
 
