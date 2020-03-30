@@ -1,7 +1,7 @@
 [![](https://images.microbadger.com/badges/image/thecaptain989/lidarr.svg)](https://microbadger.com/images/thecaptain989/lidarr "Get your own image badge on microbadger.com")
 [![](https://images.microbadger.com/badges/version/thecaptain989/lidarr.svg)](https://microbadger.com/images/thecaptain989/lidarr "Get your own version badge on microbadger.com")
 
-A Lidarr Docker container with a script to automatically convert downloaded FLAC files to MP3s using ffmpeg. It also handles downloaded MP3s, which are copied with original quality (i.e. not converted). Resulting MP3s are fully ID3 tagged by ffmpeg.
+A Lidarr Docker container with a script to automatically convert downloaded FLAC files to MP3s using ffmpeg.  Default quality is 320Kbps.
 
 # First Things First
 Configure the Docker container with all the port, volume, and environment settings from the original container documentation here:  
@@ -16,7 +16,8 @@ After all of the above configuration is complete, to use ffmpeg, configure a cus
 
 New track file(s) with an MP3 extension will be placed in the same directory as the original FLAC file(s). Existing MP3 files with the same track name will be overwritten.
 
-**NOTE:** The original FLAC audio file(s) will be deleted and permanently lost.
+If you've configured the Lidarr Recycle Bin path correctly, the original video will be moved there.  
+**NOTE:** If you have *not* configured the Recycle Bin, the original FLAC audio file(s) will be deleted and permanently lost.
 
 ### Syntax
 **Note:** The **Arguments** field for Custom Scripts was removed in Lidarr release [v0.7.0.1347](https://github.com/lidarr/Lidarr/commit/b9d240924f8965ebb2c5e307e36b810ae076101e "Lidarr commit notes") due to security concerns.
