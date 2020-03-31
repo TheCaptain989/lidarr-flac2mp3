@@ -23,12 +23,7 @@ MAXLOG=4
 DEBUG=0
 TRACKS="$lidarr_addedtrackpaths"
 [ -z "$TRACKS" ] && TRACKS="$lidarr_trackfile_path"      # For other event type
-RECYCLEBIN=$(python -c "import sqlite3
-conSql = sqlite3.connect('/config/lidarr.db')
-cursorObj = conSql.cursor()
-cursorObj.execute('SELECT Value from Config WHERE Key=\"recyclebin\"')
-print(cursorObj.fetchone()[0])
-conSql.close()")
+RECYCLEBIN=$(sqlite3 /config/lidarr.db 'SELECT Value FROM Config WHERE Key="recyclebin"')
 
 function usage {
   usage="
