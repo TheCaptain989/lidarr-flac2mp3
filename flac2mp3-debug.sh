@@ -1,3 +1,3 @@
 #!/bin/bash
 
-. /config/flac2mp3.sh -d
+. /usr/local/bin/flac2mp3.sh -d
