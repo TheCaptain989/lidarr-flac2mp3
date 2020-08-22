@@ -3,17 +3,20 @@
 
 A Lidarr Docker container with a script to automatically convert downloaded FLAC files to MP3s using ffmpeg.  Default quality is 320Kbps.
 
-# First Things First
-Configure the Docker container with all the port, volume, and environment settings from the original container documentation here:  
-**[linuxserver/lidarr](https://hub.docker.com/r/linuxserver/lidarr "Docker container")**
+# Installation
+1. Pull the [thecaptain989/lidarr](https://hub.docker.com/r/thecaptain989/lidarr "TheCaptain989's Lidarr container") docker image from the Docker Hub registry:  
+  `docker pull thecaptain989/linuxserver:latest`
 
-This container supports Linux OSes only.
+>NOTE: This container supports Linux OSes only.
+
+2. Configure the Docker container with all the port, volume, and environment settings from the *original container documentation* here:  
+  **[linuxserver/lidarr](https://hub.docker.com/r/linuxserver/lidarr "Docker container")**
+
+3. After all of the above configuration is complete, to use ffmpeg, configure a custom script from the Settings->Connect screen and type the following in the **Path** field:
+
+   **`/usr/local/bin/flac2mp3.sh`**
 
 ## Usage
-After all of the above configuration is complete, to use ffmpeg, configure a custom script from the Settings->Connect screen and type the following in the **Path** field:
-
-**`/usr/local/bin/flac2mp3.sh`**
-
 New track file(s) with an MP3 extension will be placed in the same directory as the original FLAC file(s). Existing MP3 files with the same track name will be overwritten.
 
 If you've configured the Lidarr Recycle Bin path correctly, the original video will be moved there.  
@@ -38,7 +41,7 @@ The `-d` option enables debug logging.
 ```
 
 #### Example Wrapper Script
-To use the example options above, create and save the following text in a file called `wrapper.sh` and then use that in the **Path** field in place of `flac2mp3.sh` mentioned in the [Usage](./README.md#usage) section above.
+To use the example options above, create and save the following text in a file called `wrapper.sh` and then use that in the **Path** field in place of `flac2mp3.sh` mentioned in the [Installation](./README.md#installation) section above.
 ```
 #!/bin/bash
 
@@ -47,7 +50,7 @@ To use the example options above, create and save the following text in a file c
 
 #### Included Wrapper Script
 An wrapper script to enable debugging is included in the Docker container.  
-Use this script in place of the `flac2mp3.sh` mentioned in the [Usage](./README.md#usage) section above.
+Use this script in place of the `flac2mp3.sh` mentioned in the [Installation](./README.md#installation) section above.
 
 **`/usr/local/bin/flac2mp3-debug.sh`**
 
@@ -64,14 +67,11 @@ A log file is created for the script activity called:
 This log can be downloaded from the Lidarr GUI under System->Log Files
 
 Log rotation is performed, with 5 log files of 1MB each kept, matching Lidarr's log retention.
-
-If debug logging is enabled, the log file can grow very large very quickly.
+If debug logging is enabled, the log file can grow very large very quickly.  *Do not leave debug logging enabled permanently.*
 
 ## Credits
 This would not be possible without the following:
 
-[Lidarr](https://lidarr.audio/ "Lidarr homepage")
-
-[LinuxServer.io Lidarr](https://hub.docker.com/r/linuxserver/lidarr "Docker container") container
-
+[Lidarr](https://lidarr.audio/ "Lidarr homepage")  
+[LinuxServer.io Lidarr](https://hub.docker.com/r/linuxserver/lidarr "Docker container") container  
 [ffmpeg](https://ffmpeg.org/ "FFMpeg homepage")
