@@ -5,7 +5,7 @@ A Lidarr Docker container with a script to automatically convert downloaded FLAC
 
 # Installation
 1. Pull the [thecaptain989/lidarr](https://hub.docker.com/r/thecaptain989/lidarr "TheCaptain989's Lidarr container") docker image from the Docker Hub registry:  
-  `docker pull thecaptain989/linuxserver:latest`
+  `docker pull thecaptain989/lidarr:latest`
 
 >NOTE: This container supports Linux OSes only.
 
