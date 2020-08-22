@@ -32,10 +32,10 @@ LABEL org.opencontainers.image.title="thecaptain989/lidarr" \
 # Add custom branding to container init script
 COPY 98-motd /etc/cont-init.d/98-motd
 
-# Copy shell script that can be called by Radarr
+# Copy shell script that can be called by Lidarr
 COPY --chown=root:users flac2mp3*.sh /usr/local/bin/
 
-# Install mkvtoolnix which included mkvmerge
+# Install ffmpeg
 RUN chmod +x /usr/local/bin/flac2mp3*.sh &&\
     echo "$VERSION" > /etc/version.tc989 &&\
     apt-get update &&\
