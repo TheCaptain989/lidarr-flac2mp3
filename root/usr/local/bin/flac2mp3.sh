@@ -13,6 +13,7 @@
 # Exit codes:
 #  0 - success; or test
 #  1 - no tracks files specified on command line
+#  2 - mkvmerge not found
 # 10 - awk script generated an error
 
 ### Variables
@@ -115,6 +116,13 @@ if [ -z "$flac2mp3_tracks" ]; then
   >&2 echo "$MSG"
   usage
   exit 1
+fi
+
+if [ ! -f "/usr/bin/ffmpeg" ]; then
+  MSG="Error|/usr/bin/ffmpeg is required by this script"
+  echo "$MSG" | log
+  >&2 echo "$MSG"
+  exit 2
 fi
 
 # Legacy one-liner script

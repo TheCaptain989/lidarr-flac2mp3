@@ -3,7 +3,7 @@
 cat <<EOF
 ----------------
 >>> Flac2MP3 Mod by TheCaptain989 <<<
-Repo: https://github.com/TheCaptain989/lidarr-flac2mp3/tree/docker-mod/
+Repo: https://github.com/TheCaptain989/lidarr-flac2mp3/tree/TheCaptain989-docker-mod/
 
 Version: $(cat /etc/version.tc989)
 ----------------
