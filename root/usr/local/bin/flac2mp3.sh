@@ -78,7 +78,45 @@ function read_xml {
   local IFS=\>
   read -d \< ENTITY CONTENT
 }
-
+# Initiate API Rescan request
+function rescan {
+  MSG="Info|Calling Lidarr API to rescan artist"
+  echo "$MSG" | log
+  [ $flac2mp3_debug -eq 1 ] && echo "Debug|Forcing rescan of artist '$lidarr_artist_id'. Calling Lidarr API 'RefreshArtist' using POST and URL 'http://$flac2mp3_bindaddress:$flac2mp3_port$flac2mp3_urlbase/api/v1/command?apikey=(removed)'" | log
+  RESULT=$(curl -s -d "{name: 'RefreshArtist', artistId: $lidarr_artist_id}" -H "Content-Type: application/json" \
+    -X POST http://$flac2mp3_bindaddress:$flac2mp3_port$flac2mp3_urlbase/api/v1/command?apikey=$flac2mp3_apikey)
+  [ $flac2mp3_debug -eq 1 ] && echo "API returned: $RESULT" | awk '{print "Debug|"$0}' | log
+  JOBID="$(echo $RESULT | jq -crM .id)"
+  if [ "$JOBID" != "null" ]; then
+    local RET=0
+  else
+    local RET=1
+  fi
+  return $RET
+}
+# Check result of rescan job
+function check_rescan {
+  local i=0
+  for ((i=1; i <= 15; i++)); do
+    [ $flac2mp3_debug -eq 1 ] && echo "Debug|Checking job $JOBID completion, try #$i. Calling Lidarr API using GET and URL 'http://$flac2mp3_bindaddress:$flac2mp3_port$flac2mp3_urlbase/api/command/$JOBID?apikey=(removed)'" | log
+    RESULT=$(curl -s -H "Content-Type: application/json" \
+      -X GET http://$flac2mp3_bindaddress:$flac2mp3_port$flac2mp3_urlbase/api/v1/command/$JOBID?apikey=$flac2mp3_apikey)
+    [ $flac2mp3_debug -eq 1 ] && echo "API returned: $RESULT" | awk '{print "Debug|"$0}' | log
+    if [ "$(echo $RESULT | jq -crM .status)" = "completed" ]; then
+      local RET=0
+      break
+    else
+      if [ "$(echo $RESULT | jq -crM .status)" = "failed" ]; then
+        local RET=2
+        break
+      else
+        local RET=1
+        sleep 1
+      fi
+    fi
+  done
+  return $RET
+}
 # Process options
 while getopts ":db:" opt; do
   case ${opt} in
@@ -165,9 +203,9 @@ BEGIN {
 ' | log
 
 RET="${PIPESTATUS[1]}"    # captures awk exit status
-if [ $RET == "0" ]; then
+if [ $RET != "0" ]; then
   # Check for script completion and non-empty file
-  MSG="Error|Script failed."
+  MSG="Error|Script exited abnormally.  File permissions issue?"
   echo "$MSG" | log
   >&2 echo "$MSG"
   exit 10
@@ -186,11 +224,21 @@ if [ ! -z "$lidarr_artist_id" ]; then
     
     [[ $flac2mp3_bindaddress = "*" ]] && flac2mp3_bindaddress=localhost
     
-    [ $flac2mp3_debug -eq 1 ] && echo "Debug|Calling Lidarr API 'RefreshArtist' using artist id '$lidarr_artist_id' and URL 'http://$flac2mp3_bindaddress:$flac2mp3_port$flac2mp3_urlbase/api/v1/command?apikey=$flac2mp3_apikey'" | log
-    # Calling API
-    RESULT=$(curl -s -d "{name: 'RefreshArtist', artistId: $lidarr_artist_id}" -H "Content-Type: application/json" \
-      -X POST http://$flac2mp3_bindaddress:$flac2mp3_port$flac2mp3_urlbase/api/v1/command?apikey=$flac2mp3_apikey | jq -c '. | {JobId: .id, ArtistId: .body.artistId, Message: .status, DateStarted: .queued}')
-    [ $flac2mp3_debug -eq 1 ] && echo "Debug|API returned: $RESULT" | log
+    # Scan the disk for the new audio tracks
+    if rescan; then
+      # Check that the rescan completed
+      if ! check_rescan; then
+        # Timeout or failure
+        MSG="Warn|Lidarr job ID $JOBID timed out or failed."
+        echo "$MSG" | log
+        >&2 echo "$MSG"
+      fi
+    else
+      # Error from API
+      MSG="Error|The 'RefreshArtist' API with artist $lidarr_artist_id failed."
+      echo "$MSG" | log
+      >&2 echo "$MSG"
+    fi
   else
     MSG="Warn|Unable to locate Lidarr config file: '$flac2mp3_config'"
     echo "$MSG" | log
