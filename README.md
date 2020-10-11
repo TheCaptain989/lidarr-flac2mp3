@@ -1,30 +1,37 @@
-[![](https://images.microbadger.com/badges/image/thecaptain989/lidarr.svg)](https://microbadger.com/images/thecaptain989/lidarr "Get your own image badge on microbadger.com")
-[![](https://images.microbadger.com/badges/version/thecaptain989/lidarr.svg)](https://microbadger.com/images/thecaptain989/lidarr "Get your own version badge on microbadger.com")
+A [Docker Mod](https://github.com/linuxserver/docker-mods) for the LinuxServer.io Lidarr Docker container that adds a script to automatically convert downloaded FLAC files to MP3s using ffmpeg.  Default quality is 320Kbps.
 
-A Lidarr Docker container with a script to automatically convert downloaded FLAC files to MP3s using ffmpeg.  Default quality is 320Kbps.
+>**NOTE:** This mod support Linux OSes only.
+
+Container info:
+![Docker Image Size (latest by date)](https://img.shields.io/docker/image-size/thecaptain989/flac2mp3-mod)
+![Docker Pulls](https://img.shields.io/docker/pulls/thecaptain989/flac2mp3-mod "Container Pulls")   
 
 # Installation
-1. Pull the [thecaptain989/lidarr](https://hub.docker.com/r/thecaptain989/lidarr "TheCaptain989's Lidarr container") docker image from the Docker Hub registry:  
-  `docker pull thecaptain989/lidarr:latest`
-
->NOTE: This container supports Linux OSes only.
+1. Pull the [linuxserver/lidarr](https://hub.docker.com/r/linuxserver/lidarr "LinuxServer.io's Lidarr container") docker image from Docker Hub:  
+  `docker pull linuxserver/lidarr:latest`
 
 2. Configure the Docker container with all the port, volume, and environment settings from the *original container documentation* here:  
   **[linuxserver/lidarr](https://hub.docker.com/r/linuxserver/lidarr "Docker container")**
+   1. Add the **DOCKER_MODS** environment variable to the `docker create` command, as follows:  
+      `-e DOCKER_MODS=thecaptain989/flac2mp3-mod:latest`  
 
-3. After all of the above configuration is complete, to use ffmpeg, configure a custom script from the Settings->Connect screen and type the following in the **Path** field:
+      *Example Synology Configuration*  
+      ![flac2mp3](https://user-images.githubusercontent.com/11523885/95667741-cddb4580-0b2f-11eb-9e40-aa5c2e8c79f1.png "Synology container settings")
 
-   **`/usr/local/bin/flac2mp3.sh`**
+   2. Start the container.
+
+3. After all of the above configuration is complete, to use ffmpeg, configure a custom script from the Settings->Connect screen and type the following in the **Path** field:  
+   `/usr/local/bin/flac2mp3.sh`
 
 ## Usage
-New track file(s) with an MP3 extension will be placed in the same directory as the original FLAC file(s). Existing MP3 files with the same track name will be overwritten.
+New file(s) with an MP3 extension will be placed in the same directory as the original FLAC file(s). Existing MP3 files with the same track name will be overwritten.
 
 If you've configured the Lidarr Recycle Bin path correctly, the original video will be moved there.  
-**NOTE:** If you have *not* configured the Recycle Bin, the original FLAC audio file(s) will be deleted and permanently lost.
+![warning24] **NOTE:** If you have *not* configured the Recycle Bin, the original FLAC audio file(s) will be deleted and permanently lost.
 
 ### Syntax
-**Note:** The **Arguments** field for Custom Scripts was removed in Lidarr release [v0.7.0.1347](https://github.com/lidarr/Lidarr/commit/b9d240924f8965ebb2c5e307e36b810ae076101e "Lidarr commit notes") due to security concerns.
-To support options with this version and later, a wrapper script can be manually created that will call *flac2mp3.sh* with the required arguments. Therefore, this section is for legacy and advanced purposes only.
+>**Note:** The **Arguments** field for Custom Scripts was removed in Lidarr release [v0.7.0.1347](https://github.com/lidarr/Lidarr/commit/b9d240924f8965ebb2c5e307e36b810ae076101e "Lidarr commit notes") due to security concerns.
+To support options with this version and later, a wrapper script can be manually created that will call *flac2mp3.sh* with the required arguments.
 
 The script accepts two options which may be placed in the **Arguments** field:
 
@@ -34,30 +41,33 @@ The `-b bitrate` option, if specified, sets the output quality in bits per secon
 
 The `-d` option enables debug logging.
 
-#### Examples
+### Examples
 ```
 -b 320k        # Output 320 kilobits per second MP3 (same as default behavior)
 -d -b 160k     # Enable debugging, and output 160 kilobits per second MP3
 ```
 
-#### Example Wrapper Script
-To use the example options above, create and save the following text in a file called `wrapper.sh` and then use that in the **Path** field in place of `flac2mp3.sh` mentioned in the [Installation](./README.md#installation) section above.
+### Included Wrapper Script
+For your convenience, a wrapper script to enable debugging is included in the `/usr/local/bin/` directory.  
+Use this script in place of the `flac2mp3.sh` mentioned in the [Installation](./README.md#installation) section above.
+
+```
+flac2mp3-debug.sh        # Enable debugging
+```
+
+### Example Wrapper Script
+To configure the last entry from the [Examples](./README.md#examples) section above, create and save a file called `wrapper.sh` to `/usr/local/bin` containing the following text:
 ```
 #!/bin/bash
 
 . /usr/local/bin/flac2mp3.sh -d -b 160k
 ```
-
-#### Included Wrapper Script
-An wrapper script to enable debugging is included in the Docker container.  
-Use this script in place of the `flac2mp3.sh` mentioned in the [Installation](./README.md#installation) section above.
-
-**`/usr/local/bin/flac2mp3-debug.sh`**
+Then put `/usr/local/bin/wrapper.sh` in the **Path** field in place of `/usr/local/bin/flac2mp3.sh` mentioned in the [Installation](./README.md#installation) section above.
 
 ### Triggers
 The only events/notification triggers that have been tested are **On Release Import** and **On Upgrade**
 
-![lidarr-flac2mp3](https://raw.githubusercontent.com/TheCaptain989/lidarr-flac2mp3/master/images/flac2mp3.png "Lidarr Custom Script dialog")
+![lidarr-flac2mp3](https://user-images.githubusercontent.com/11523885/95667749-e4819c80-0b2f-11eb-8e5a-32fe8efc19d7.png "Lidarr Custom Script dialog")
 
 ### Logs
 A log file is created for the script activity called:
@@ -67,11 +77,14 @@ A log file is created for the script activity called:
 This log can be downloaded from the Lidarr GUI under System->Log Files
 
 Log rotation is performed, with 5 log files of 1MB each kept, matching Lidarr's log retention.
-If debug logging is enabled, the log file can grow very large very quickly.  *Do not leave debug logging enabled permanently.*
+>![warning24] **NOTE:** If debug logging is enabled, the log file can grow very large very quickly.  *Do not leave debug logging enabled permanently.*
 
 ## Credits
 This would not be possible without the following:
 
 [Lidarr](https://lidarr.audio/ "Lidarr homepage")  
-[LinuxServer.io Lidarr](https://hub.docker.com/r/linuxserver/lidarr "Docker container") container  
+[LinuxServer.io Lidarr](https://hub.docker.com/r/linuxserver/lidarr "Lidarr Docker container") container  
 [ffmpeg](https://ffmpeg.org/ "FFMpeg homepage")
+
+[warning]: http://files.softicons.com/download/application-icons/32x32-free-design-icons-by-aha-soft/png/32/Warning.png "Warning"
+[warning24]: http://files.softicons.com/download/toolbar-icons/24x24-free-pixel-icons-by-aha-soft/png/24x24/Warning.png "Warning"

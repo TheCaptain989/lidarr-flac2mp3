@@ -1,5 +1,5 @@
 ## Buildstage ##
-FROM lsiobase/ubuntu:xenial as buildstage
+FROM lsiobase/ubuntu.arm64:xenial as buildstage
 
 # Build arguments
 ARG VERSION
