@@ -182,8 +182,8 @@ BEGIN {
   sub(/\n/,"",Track)
   NewTrack=substr(Track, 1, length(Track)-5)".mp3"
   print "Info|Writing: "NewTrack
-  if (Debug) print "Debug|Executing: "FFMpeg" -loglevel error -i \""Track"\" "CoverCmds1"-map 0 -y -acodec libmp3lame -b:a "Bitrate" -write_id3v1 1 -id3v2_version 3 "CoverCmds2"\""NewTrack"\""
-  Result=system(FFMpeg" -loglevel error -i \""Track"\" "CoverCmds1"-map 0 -y -acodec libmp3lame -b:a "Bitrate" -write_id3v1 1 -id3v2_version 3 "CoverCmds2"\""NewTrack"\" 2>&1")
+  if (Debug) print "Debug|Executing: nice "FFMpeg" -loglevel error -i \""Track"\" "CoverCmds1"-map 0 -y -acodec libmp3lame -b:a "Bitrate" -write_id3v1 1 -id3v2_version 3 "CoverCmds2"\""NewTrack"\""
+  Result=system("nice "FFMpeg" -loglevel error -i \""Track"\" "CoverCmds1"-map 0 -y -acodec libmp3lame -b:a "Bitrate" -write_id3v1 1 -id3v2_version 3 "CoverCmds2"\""NewTrack"\" 2>&1")
   if (Result) {
     print "Error|"Result" converting \""Track"\""
   } else {
