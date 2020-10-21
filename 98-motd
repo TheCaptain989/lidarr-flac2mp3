@@ -1,4 +1,0 @@
-#!/usr/bin/with-contenv bash
-
-echo '>>> Modded by TheCaptain989 <<<'
-echo "Version: $(cat /etc/version.tc989)"

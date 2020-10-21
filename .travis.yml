@@ -1,0 +1,54 @@
+language: bash
+os: linux
+
+arch:
+  - amd64
+  - arm64
+
+services:
+  - docker
+
+env:
+  global:
+    - DOCKERHUB="thecaptain989/flac2mp3-mod"
+
+jobs:
+  include:
+    - os: linux
+      arch: amd64
+      stage: BuildImage
+      if: (NOT (type IN (pull_request)))
+      script:
+        # Build variables
+        - VERSION=$(git describe --tags --always)
+        # Build image
+        - docker build --no-cache
+          --build-arg VERSION=${VERSION}
+          --file Dockerfile
+          --tag ${DOCKERHUB}:${TRAVIS_COMMIT} .
+        - docker tag ${DOCKERHUB}:${TRAVIS_COMMIT} ${DOCKERHUB}:amd64
+        - docker tag ${DOCKERHUB}:${TRAVIS_COMMIT} ${DOCKERHUB}:latest
+        # Login to DockerHub
+        - echo $DOCKERPASS | docker login -u $DOCKERUSER --password-stdin
+        # Push all of the tags
+        - docker push ${DOCKERHUB}:${TRAVIS_COMMIT}
+        - docker push ${DOCKERHUB}:amd64
+        - docker push ${DOCKERHUB}:latest
+    - os: linux
+      arch: arm64
+      stage: BuildImage
+      if: (NOT (type IN (pull_request)))
+      script:
+        # Build variables
+        - VERSION=$(git describe --tags --always)
+        # Build image
+        - docker build --no-cache
+          --build-arg VERSION=${VERSION}
+          --file Dockerfile.arm64
+          --tag ${DOCKERHUB}:${TRAVIS_COMMIT} .
+        - docker tag ${DOCKERHUB}:${TRAVIS_COMMIT} ${DOCKERHUB}:arm64
+        - docker tag ${DOCKERHUB}:${TRAVIS_COMMIT} ${DOCKERHUB}:latest
+        # Login to DockerHub
+        - echo $DOCKERPASS | docker login -u $DOCKERUSER --password-stdin
+        # Push all of the tags
+        - docker push ${DOCKERHUB}:arm64
