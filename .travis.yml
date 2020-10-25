@@ -10,20 +10,14 @@ env:
 
 if: (NOT (type IN (pull_request)))
 
-# YAML anchors used elsewhere
-_git_version: &git_version
-  - VERSION=$(git describe --tags --always)
-_docker_login: &docker_login
-  - echo $DOCKERPASS | docker login -u $DOCKERUSER --password-stdin
-
 jobs:
   include:
-    - stage: BuildImage
-      name: build amd64
+    - stage: Build Images
+      name: Build AMD64
       arch: amd64
       script:
         # Build variables
-        - <<: *git_version
+        - VERSION=$(git describe --tags --always)
         # Build image
         - docker build --no-cache
           --build-arg VERSION=${VERSION}
@@ -31,14 +25,14 @@ jobs:
           --tag ${DOCKERHUB}:${TRAVIS_COMMIT} .
         - docker tag ${DOCKERHUB}:${TRAVIS_COMMIT} ${DOCKERHUB}:amd64
         # Login to DockerHub
-        - <<: *docker_login
+        - echo $DOCKERPASS | docker login -u $DOCKERUSER --password-stdin
         # Push the tag
         - docker push ${DOCKERHUB}:amd64
-    - name: build arm64
+    - name: Build ARM64
       arch: arm64
       script:
         # Build variables
-        - <<: *git_version
+        - VERSION=$(git describe --tags --always)
         # Build image
         - docker build --no-cache
           --build-arg VERSION=${VERSION}
@@ -46,7 +40,7 @@ jobs:
           --tag ${DOCKERHUB}:${TRAVIS_COMMIT} .
         - docker tag ${DOCKERHUB}:${TRAVIS_COMMIT} ${DOCKERHUB}:arm64
         # Login to DockerHub
-        - <<: *docker_login
+        - echo $DOCKERPASS | docker login -u $DOCKERUSER --password-stdin
         # Push the tag
         - docker push ${DOCKERHUB}:arm64
     - stage: dockerhub push
@@ -56,6 +50,6 @@ jobs:
         - docker manifest create ${DOCKERHUB}:latest ${DOCKERHUB}:amd64 ${DOCKERHUB}:arm64
         - docker manifest annotate ${DOCKERHUB}:latest ${DOCKERHUB}:arm64 --os linux --arch arm64 --variant v8
         # Login to DockerHub
-        - <<: *docker_login
+        - echo $DOCKERPASS | docker login -u $DOCKERUSER --password-stdin
         # Push all of the tags
         - docker manifest push ${DOCKERHUB}:latest
