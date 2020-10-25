@@ -28,7 +28,7 @@ jobs:
         - echo $DOCKERPASS | docker login -u $DOCKERUSER --password-stdin
         # Push the tag
         - docker push ${DOCKERHUB}:amd64
-    - name: Build ARM64
+    - name: Build Arm64
       arch: arm64
       script:
         # Build variables
@@ -43,7 +43,8 @@ jobs:
         - echo $DOCKERPASS | docker login -u $DOCKERUSER --password-stdin
         # Push the tag
         - docker push ${DOCKERHUB}:arm64
-    - stage: dockerhub push
+    - stage: Docker Hub create manifest
+      env: DOCKER_CLI_EXPERIMENTAL=enabled
       script:
         - docker pull ${DOCKERHUB}:amd64
         - docker pull ${DOCKERHUB}:arm64
