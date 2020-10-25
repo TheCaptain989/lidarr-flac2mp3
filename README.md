@@ -13,7 +13,7 @@ Container info:
 2. Configure the Docker container with all the port, volume, and environment settings from the *original container documentation* here:  
   **[linuxserver/lidarr](https://hub.docker.com/r/linuxserver/lidarr "Docker container")**
    1. Add the **DOCKER_MODS** environment variable to the `docker create` command, as follows:  
-      `-e DOCKER_MODS=thecaptain989/flac2mp3-mod:latest`  
+      `-e DOCKER_MODS=thecaptain989/lidarr:latest`  
 
       *Example Synology Configuration*  
       ![flac2mp3](https://user-images.githubusercontent.com/11523885/95667741-cddb4580-0b2f-11eb-9e40-aa5c2e8c79f1.png "Synology container settings")
