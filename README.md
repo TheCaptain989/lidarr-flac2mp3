@@ -3,8 +3,8 @@ A [Docker Mod](https://github.com/linuxserver/docker-mods) for the LinuxServer.i
 >**NOTE:** This mod support Linux OSes only.
 
 Container info:
-![Docker Image Size (latest by date)](https://img.shields.io/docker/image-size/thecaptain989/flac2mp3-mod)
-![Docker Pulls](https://img.shields.io/docker/pulls/thecaptain989/flac2mp3-mod "Container Pulls")   
+![Docker Image Size (latest by date)](https://img.shields.io/docker/image-size/thecaptain989/lidarr-flac2mp3)
+![Docker Pulls](https://img.shields.io/docker/pulls/thecaptain989/lidarr-flac2mp3 "Container Pulls")   
 
 # Installation
 1. Pull the [linuxserver/lidarr](https://hub.docker.com/r/linuxserver/lidarr "LinuxServer.io's Lidarr container") docker image from Docker Hub:  
@@ -13,10 +13,10 @@ Container info:
 2. Configure the Docker container with all the port, volume, and environment settings from the *original container documentation* here:  
   **[linuxserver/lidarr](https://hub.docker.com/r/linuxserver/lidarr "Docker container")**
    1. Add the **DOCKER_MODS** environment variable to the `docker create` command, as follows:  
-      `-e DOCKER_MODS=thecaptain989/lidarr:latest`  
+      `-e DOCKER_MODS=thecaptain989/lidarr-flac2mp3:latest`  
 
       *Example Synology Configuration*  
-      ![flac2mp3](https://user-images.githubusercontent.com/11523885/95667741-cddb4580-0b2f-11eb-9e40-aa5c2e8c79f1.png "Synology container settings")
+      ![flac2mp3](.assets/lidarr-synology.png "Synology container settings")
 
    2. Start the container.
 
@@ -67,7 +67,7 @@ Then put `/usr/local/bin/wrapper.sh` in the **Path** field in place of `/usr/loc
 ### Triggers
 The only events/notification triggers that have been tested are **On Release Import** and **On Upgrade**
 
-![lidarr-flac2mp3](https://user-images.githubusercontent.com/11523885/95667749-e4819c80-0b2f-11eb-8e5a-32fe8efc19d7.png "Lidarr Custom Script dialog")
+![lidarr-flac2mp3](.assets/lidarr-custom-script "Lidarr Custom Script dialog")
 
 ### Logs
 A log file is created for the script activity called:

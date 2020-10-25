@@ -6,7 +6,7 @@ services:
 
 env:
   global:
-    - DOCKERHUB="thecaptain989/lidarr"
+    - DOCKERHUB="thecaptain989/lidarr-flac2mp3"
 
 if: (NOT (type IN (pull_request)))
 
