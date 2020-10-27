@@ -67,7 +67,7 @@ Then put `/usr/local/bin/wrapper.sh` in the **Path** field in place of `/usr/loc
 ### Triggers
 The only events/notification triggers that have been tested are **On Release Import** and **On Upgrade**
 
-![lidarr-flac2mp3](.assets/lidarr-custom-script "Lidarr Custom Script dialog")
+![lidarr-flac2mp3](.assets/lidarr-custom-script.png "Lidarr Custom Script dialog")
 
 ### Logs
 A log file is created for the script activity called:
