@@ -16,7 +16,7 @@ jobs:
         run: |
           docker build --no-cache -t ${DOCKERHUB}:${{ github.sha }} .
       - name: Push image
-        if: ${{ github.ref == format('refs/heads/{0}-{1}', env.BASEIMAGE, env.MODNAME) }}
+        #if: ${{ github.ref == format('refs/heads/{0}-{1}', env.BASEIMAGE, env.MODNAME) }}
         run: |
           # Tag image
           docker tag ${DOCKERHUB}:${{ github.sha }} ${DOCKERHUB}:latest
