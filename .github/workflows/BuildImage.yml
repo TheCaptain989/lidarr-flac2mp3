@@ -35,7 +35,7 @@ jobs:
             exit 1
           fi
       - name: Login to DockerHub
-        if: ${{ env.DOCKERUSER != "" && env.DOCKERPASS != "" }}
+        if: ${{ env.DOCKERUSER != '' && env.DOCKERPASS != '' }}
         run: |
           echo "${{ secrets.DOCKERPASS }}" | docker login -u "${{ secrets.DOCKERUSER }}" --password-stdin
       - name: Push tags to DockerHub
