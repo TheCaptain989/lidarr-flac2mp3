@@ -23,7 +23,6 @@ jobs:
         run: |
           docker tag ${ENDPOINT}:${{ github.sha }} ${ENDPOINT}:latest
       - name: Credential check
-        if: ${{ env.DOCKERUSER && env.DOCKERPASS }}
         run: |
           echo "CR_USER=${{ secrets.CR_USER }}" >> $GITHUB_ENV
           echo "CR_PAT=${{ secrets.CR_PAT }}" >> $GITHUB_ENV
@@ -36,11 +35,11 @@ jobs:
             exit 1
           fi
       - name: Login to DockerHub
-        if: ${{ env.DOCKERUSER && env.DOCKERPASS }}
+        if: ${{ secrets.DOCKERUSER && secrets.DOCKERPASS }}
         run: |
           echo ${{ secrets.DOCKERPASS }} | docker login -u ${{ secrets.DOCKERUSER }} --password-stdin
       - name: Push tags to DockerHub
-        if: ${{ env.DOCKERUSER && env.DOCKERPASS }}
+        if: ${{ secrets.DOCKERUSER && secrets.DOCKERPASS }}
         run: |
           docker push ${ENDPOINT}:${{ github.sha }}
           docker push ${ENDPOINT}:latest
