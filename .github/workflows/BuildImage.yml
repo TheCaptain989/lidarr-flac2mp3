@@ -35,11 +35,11 @@ jobs:
             exit 1
           fi
       - name: Login to DockerHub
-        if: ${{ secrets.DOCKERUSER && secrets.DOCKERPASS }}
+        if: ${{ env.DOCKERUSER != "" && env.DOCKERPASS != "" }}
         run: |
-          echo ${{ secrets.DOCKERPASS }} | docker login -u ${{ secrets.DOCKERUSER }} --password-stdin
+          echo "${{ secrets.DOCKERPASS }}" | docker login -u "${{ secrets.DOCKERUSER }}" --password-stdin
       - name: Push tags to DockerHub
-        if: ${{ secrets.DOCKERUSER && secrets.DOCKERPASS }}
+        if: ${{ env.DOCKERUSER != "" && env.DOCKERPASS != "" }}
         run: |
           docker push ${ENDPOINT}:${{ github.sha }}
           docker push ${ENDPOINT}:latest
