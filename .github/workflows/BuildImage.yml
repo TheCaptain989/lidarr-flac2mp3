@@ -24,9 +24,11 @@ jobs:
           docker build --build-arg VERSION=$VERSION \
                        --no-cache \
                        --tag ${ENDPOINT}:${{ github.sha }} .
+
       - name: Tag image
         run: |
           docker tag ${ENDPOINT}:${{ github.sha }} ${ENDPOINT}:latest
+
       - name: Credential check
         run: |
           echo "CR_USER=${{ secrets.CR_USER }}" >> $GITHUB_ENV
@@ -39,10 +41,12 @@ jobs:
             echo "::error::See https://github.com/linuxserver/docker-mods/blob/master/README.md for more information/instructions."
             exit 1
           fi
+
       - name: Login to DockerHub
         if: ${{ env.DOCKERUSER != '' && env.DOCKERPASS != '' }}
         run: |
           echo "${{ secrets.DOCKERPASS }}" | docker login -u "${{ secrets.DOCKERUSER }}" --password-stdin
+
       - name: Push tags to DockerHub
         if: ${{ env.DOCKERUSER != '' && env.DOCKERPASS != '' }}
         run: |
