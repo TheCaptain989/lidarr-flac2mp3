@@ -1,10 +1,15 @@
-A [Docker Mod](https://github.com/linuxserver/docker-mods) for the LinuxServer.io Lidarr Docker container that uses ffmpeg and a script to automatically convert downloaded FLAC files to MP3s.  Default quality is 320Kbps constant bit rate.
+# Development Repository
+This is a development and test repo.  Visit the [production repository and branch](https://github.com/linuxserver/docker-mods/tree/lidarr-flac2mp3) for stable/production releases.
+
+# About
+A [Docker Mod](https://github.com/linuxserver/docker-mods) for the LinuxServer.io Lidarr Docker container that uses ffmpeg and a script to automatically convert downloaded FLAC files to MP3s.  Default output quality is 320Kbps constant bit rate.
 
 >**NOTE:** This mod supports Linux OSes only.
 
-Container info:
-![Docker Image Size (latest by date)](https://img.shields.io/docker/image-size/thecaptain989/lidarr-flac2mp3 "Image Size")
-![Docker Pulls](https://img.shields.io/docker/pulls/thecaptain989/lidarr-flac2mp3 "Container Pulls")   
+Development Container info:
+![Docker Image Size](https://img.shields.io/docker/image-size/thecaptain989/lidarr-flac2mp3 "Container Size")
+![Docker Pulls](https://img.shields.io/docker/pulls/thecaptain989/lidarr-flac2mp3 "Container Pulls")  
+Production Container info: ![Docker Image Size](https://img.shields.io/docker/image-size/linuxserver/mods/lidarr-flac2mp3 "Container Size")
 
 # Installation
 1. Pull the [linuxserver/lidarr](https://hub.docker.com/r/linuxserver/lidarr "LinuxServer.io's Lidarr container") docker image from Docker Hub:  
@@ -12,8 +17,25 @@ Container info:
 
 2. Configure the Docker container with all the port, volume, and environment settings from the *original container documentation* here:  
   **[linuxserver/lidarr](https://hub.docker.com/r/linuxserver/lidarr "Docker container")**
-   1. Add the **DOCKER_MODS** environment variable to the `docker create` command, as follows:  
-      `-e DOCKER_MODS=thecaptain989/lidarr-flac2mp3:latest`  
+   1. Add a **DOCKER_MODS** environment variable to the `docker run` command, as follows:  
+      - Dev/test release: `-e DOCKER_MODS=thecaptain989/lidarr-flac2mp3:latest`  
+      - Stable release: `-e DOCKER_MODS=linuxserver/mods:lidarr-flac2mp3`
+
+      *Example Docker CLI Configuration*  
+       ```shell
+       docker run -d \
+         --name=lidarr \
+         -e PUID=1000 \
+         -e PGID=1000 \
+         -e TZ=America/Chicago \
+         -e DOCKER_MODS=linuxserver/mods:lidarr-flac2mp3 \
+         -p 8686:8686 \
+         -v /path/to/appdata/config:/config \
+         -v /path/to/music:/music \
+         -v /path/to/downloads:/downloads \
+         --restart unless-stopped \
+         ghcr.io/linuxserver/lidarr
+       ```   
 
       *Example Synology Configuration*  
       ![flac2mp3](.assets/lidarr-synology.png "Synology container settings")
@@ -28,7 +50,7 @@ Container info:
 
    This will use the defaults to create a 320Kbps MP3 file.
 
-   *For any other setting, you **must** either user one of the [included wrapper scripts](./README.md#included-wrapper-scripts) or create a custom script with the command line options you desire.  See the [Syntax](./README.md#syntax) section below.*
+   *For any other setting, you **must** either use one of the [included wrapper scripts](./README.md#included-wrapper-scripts) or create a custom script with the command line options you desire.  See the [Syntax](./README.md#syntax) section below.*
 
 ## Usage
 New file(s) with an MP3 extension will be placed in the same directory as the original FLAC file(s) and have the same owner and permissions. Existing MP3 files with the same track name will be overwritten.
@@ -45,7 +67,8 @@ The script accepts three command line options:
 `[-d] [-b <bitrate> | -v <quality>]`
 
 The `-b bitrate` option sets the output quality in constant bits per second (CBR).  
-The `-v quality` option sets the output quality using a variable bit rate (VBR) where `quality` is a value between 0 and 9, with 0 being the highest quality.  See the [FFmpeg MP3 Encoding Guide](https://trac.ffmpeg.org/wiki/Encode/MP3) for more details.  
+The `-v quality` option sets the output quality using a variable bit rate (VBR) where `quality` is a value between 0 and 9, with 0 being the highest quality.  
+See the [FFmpeg MP3 Encoding Guide](https://trac.ffmpeg.org/wiki/Encode/MP3) for more details.  
 If neither `-b` nor `-v` options are specified, the script will default to constant 320Kbps.
 
 The `-d` option enables debug logging.
@@ -67,13 +90,20 @@ flac2mp3-vbr.sh          # Use variable bit rate, quality 0
 ```
 
 ### Example Wrapper Script
-To configure the last entry from the [Examples](./README.md#examples) section above, create and save a file called `wrapper.sh` to `/usr/local/bin` containing the following text:
-```
+To configure the last entry from the [Examples](./README.md#examples) section above, create and save a file called `striptracks-custom.sh` to `/config` containing the following text:
+```shell
 #!/bin/bash
 
 . /usr/local/bin/flac2mp3.sh -d -b 160k
 ```
-Then put `/usr/local/bin/wrapper.sh` in the **Path** field in place of `/usr/local/bin/flac2mp3.sh` mentioned in the [Installation](./README.md#installation) section above.
+Make it executable:
+```shell
+chmod +x /config/striptracks-custom.sh
+```
+
+Then put `/config/striptracks-custom.sh` in the **Path** field in place of `/usr/local/bin/flac2mp3.sh` mentioned in the [Installation](./README.md#installation) section above.
+
+>**Note:** If you followed the Linuxserver.io recommendations when configuring your container, the `/config` directory will be mapped to an external storage location.  It is therefore recommended to place custom scripts in the `/config` directory so they will survive container updates, but they may be placed anywhere that is accessible by Lidarr.
 
 ### Triggers
 The only events/notification triggers that have been tested are **On Release Import** and **On Upgrade**

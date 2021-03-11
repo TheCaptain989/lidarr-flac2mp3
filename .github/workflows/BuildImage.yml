@@ -2,26 +2,45 @@ name: Build Image
 
 on: [push, pull_request, workflow_dispatch]
 
+env:
+  ENDPOINT: "thecaptain989/lidarr-flac2mp3"
+
+
+
 jobs:
   build:
-    env:
-      DOCKERHUB: "thecaptain989/lidarr-flac2mp3"
-
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2.3.3
 
       - name: Build image
-        id: build
         run: |
-          docker build --no-cache -t ${DOCKERHUB}:${{ github.sha }} .
-      - name: Push image
-        #if: ${{ github.ref == format('refs/heads/{0}-{1}', env.BASEIMAGE, env.MODNAME) }}
+          # Build variables
+          VERSION=$(git describe --tags --always)
+          # Build image
+          docker build --no-cache -t ${ENDPOINT}:${{ github.sha }} .
+      - name: Tag image
         run: |
-          # Tag image
-          docker tag ${DOCKERHUB}:${{ github.sha }} ${DOCKERHUB}:latest
-          # Login to DockerHub
+          docker tag ${ENDPOINT}:${{ github.sha }} ${ENDPOINT}:latest
+      - name: Credential check
+        if: ${{ env.DOCKERUSER && env.DOCKERPASS }}
+        run: |
+          echo "CR_USER=${{ secrets.CR_USER }}" >> $GITHUB_ENV
+          echo "CR_PAT=${{ secrets.CR_PAT }}" >> $GITHUB_ENV
+          echo "DOCKERUSER=${{ secrets.DOCKERUSER }}" >> $GITHUB_ENV
+          echo "DOCKERPASS=${{ secrets.DOCKERPASS }}" >> $GITHUB_ENV
+          if [[ "${{ secrets.CR_USER }}" == "" && "${{ secrets.CR_PAT }}" == "" && "${{ secrets.DOCKERUSER }}" == "" && "${{ secrets.DOCKERPASS }}" == "" ]]; then
+            echo "::error::Push credential secrets missing."
+            echo "::error::You must set either CR_USER & CR_PAT or DOCKERUSER & DOCKERPASS as secrets in your repo settings."
+            echo "::error::See https://github.com/linuxserver/docker-mods/blob/master/README.md for more information/instructions."
+            exit 1
+          fi
+      - name: Login to DockerHub
+        if: ${{ env.DOCKERUSER && env.DOCKERPASS }}
+        run: |
           echo ${{ secrets.DOCKERPASS }} | docker login -u ${{ secrets.DOCKERUSER }} --password-stdin
-          # Push all of the tags
-          docker push ${DOCKERHUB}:${{ github.sha }}
-          docker push ${DOCKERHUB}:latest
+      - name: Push tags to DockerHub
+        if: ${{ env.DOCKERUSER && env.DOCKERPASS }}
+        run: |
+          docker push ${ENDPOINT}:${{ github.sha }}
+          docker push ${ENDPOINT}:latest

@@ -200,7 +200,7 @@ fi
 #find "$lidarr_artist_path" -name "*.flac" -exec bash -c 'ffmpeg -loglevel warning -i "{}" -y -acodec libmp3lame -b:a 320k "${0/.flac}.mp3" && rm "{}"' {} \;
 
 #### MAIN
-echo "Info|Lidarr event: $lidarr_eventtype, Artist: $lidarr_artist_name ($lidarr_artist_id), Album: $lidarr_album_title ($lidarr_album_id), Export bitrate: $flac2mp3_bitrate, Tracks: $flac2mp3_tracks" | log
+echo "Info|Lidarr event: $lidarr_eventtype, Artist: $lidarr_artist_name ($lidarr_artist_id), Album: $lidarr_album_title ($lidarr_album_id), Export bitrate: ${flac2mp3_bitrate:-$flac2mp3_vbrquality}, Tracks: $flac2mp3_tracks" | log
 echo "$flac2mp3_tracks" | awk -v Debug=$flac2mp3_debug \
 -v Recycle="$flac2mp3_recyclebin" \
 -v Bitrate=$flac2mp3_bitrate \

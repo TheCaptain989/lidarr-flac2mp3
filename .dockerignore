@@ -1,7 +1,10 @@
 # Docker ignore file
 .git
 .gitignore
+.github
+.gitattributes
+.assets
 hooks
-images
+READMETEMPLATE.md
 README.md
 SECURITY.md
