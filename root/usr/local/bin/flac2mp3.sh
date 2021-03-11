@@ -9,6 +9,7 @@
 #  ffmpeg
 #  awk
 #  stat
+#  nice
 #  chmod
 
 # Exit codes:
@@ -179,7 +180,7 @@ if [[ "$lidarr_eventtype" = "Test" ]]; then
   exit 0
 fi
 
-# Chick if called from within Lidarr
+# Check if called from within Lidarr
 if [ -z "$flac2mp3_tracks" ]; then
   MSG="Error|No track file(s) specified! Not called from Lidarr?"
   echo "$MSG" | log
