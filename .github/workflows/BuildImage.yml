@@ -22,7 +22,7 @@ jobs:
           EOF
           # Build image
           docker build --build-arg VERSION=$VERSION \
-                       --no-cache
+                       --no-cache \
                        --tag ${ENDPOINT}:${{ github.sha }} .
       - name: Tag image
         run: |
