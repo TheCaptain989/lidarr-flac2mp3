@@ -17,6 +17,9 @@ jobs:
         run: |
           # Build variables
           VERSION=$(git describe --tags --always)
+          cat <<EOF
+          Building version $VERSION
+          EOF
           # Build image
           docker build --no-cache -t ${ENDPOINT}:${{ github.sha }} .
       - name: Tag image
