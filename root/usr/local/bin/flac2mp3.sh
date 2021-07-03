@@ -54,7 +54,7 @@ Examples:
   $flac2mp3_script -v 0               # Output variable bitrate, VBR 220-260 kbit/s
   $flac2mp3_script -d -b 160k         # Enable debugging and set output to 160 kbit/s
 "
-  >&2 echo "$usage"
+  echo "$usage" >&2
 }
 # Can still go over flac2mp3_maxlog if read line is too long
 #  Must include whole function in subshell for read to work!
@@ -127,7 +127,7 @@ while getopts ":db:v:" opt; do
     d ) # For debug purposes only
       flac2mp3_message="Debug|Enabling debug logging."
       echo "$flac2mp3_message" | log
-      >&2 echo "$flac2mp3_message"
+      echo "$flac2mp3_message" >&2
       flac2mp3_debug=1
       printenv | sort | sed 's/^/Debug|/' | log
       ;;
@@ -135,7 +135,7 @@ while getopts ":db:v:" opt; do
       if [ -n "$flac2mp3_vbrquality" ]; then
         flac2mp3_message="Error|Both -b and -v options cannot be set at the same time."
         echo "$flac2mp3_message" | log
-        >&2 echo "$flac2mp3_message"
+        echo "$flac2mp3_message" >&2
         usage
         exit 3
       else
@@ -146,7 +146,7 @@ while getopts ":db:v:" opt; do
       if [ -n "$flac2mp3_bitrate" ]; then
         flac2mp3_message="Error|Both -v and -b options cannot be set at the same time."
         echo "$flac2mp3_message" | log
-        >&2 echo "$flac2mp3_message"
+        echo "$flac2mp3_message" >&2
         usage
         exit 3
       else
@@ -156,14 +156,14 @@ while getopts ":db:v:" opt; do
     : ) # No required argument specified
       flac2mp3_message="Error|Invalid option: -${OPTARG} requires an argument"
       echo "$flac2mp3_message" | log
-      >&2 echo "$flac2mp3_message"
+      echo "$flac2mp3_message" >&2
       usage
       exit 3
       ;;
     * ) # Unknown option
       flac2mp3_message="Error|Unknown option: -${OPTARG}"
       echo "$flac2mp3_message" | log
-      >&2 echo "$flac2mp3_message"
+      echo "$flac2mp3_message" >&2
       usage
       exit 3
       ;;
@@ -205,7 +205,7 @@ else
   # No config file means we can't call the API.  Best effort at this point.
   flac2mp3_message="Warn|Unable to locate Lidarr config file: '$flac2mp3_config'"
   echo "$flac2mp3_message" | log
-  >&2 echo "$flac2mp3_message"
+  echo "$flac2mp3_message" >&2
 fi
 
 # Handle Lidarr Test event
@@ -219,7 +219,7 @@ fi
 if [ -z "$flac2mp3_tracks" ]; then
   flac2mp3_message="Error|No track file(s) specified! Not called from Lidarr?"
   echo "$flac2mp3_message" | log
-  >&2 echo "$flac2mp3_message"
+  echo "$flac2mp3_message" >&2
   usage
   exit 1
 fi
@@ -228,7 +228,7 @@ fi
 if [ ! -f "/usr/bin/ffmpeg" ]; then
   flac2mp3_message="Error|/usr/bin/ffmpeg is required by this script"
   echo "$flac2mp3_message" | log
-  >&2 echo "$flac2mp3_message"
+  echo "$flac2mp3_message" >&2
   exit 2
 fi
 
@@ -295,7 +295,7 @@ flac2mp3_return="${PIPESTATUS[1]}"    # captures awk exit status
 if [ $flac2mp3_return != "0" ]; then
   flac2mp3_message="Error|Script exited abnormally.  File permissions issue?"
   echo "$flac2mp3_message" | log
-  >&2 echo "$flac2mp3_message"
+  echo "$flac2mp3_message" >&2
   exit 10
 fi
 
@@ -309,25 +309,25 @@ if [ -n "$flac2mp3_api_url" ]; then
         # Timeout or failure
         flac2mp3_message="Warn|Lidarr job ID $flac2mp3_jobid timed out or failed."
         echo "$flac2mp3_message" | log
-        >&2 echo "$flac2mp3_message"
+        echo "$flac2mp3_message" >&2
       fi
     else
       # Error from API
       flac2mp3_message="Error|The 'RefreshArtist' API with artist $lidarr_artist_id failed."
       echo "$flac2mp3_message" | log
-      >&2 echo "$flac2mp3_message"
+      echo "$flac2mp3_message" >&2
     fi
   else
     # No Artist ID means we can't call the API
     flac2mp3_message="Warn|Missing environment variable lidarr_artist_id"
     echo "$flac2mp3_message" | log
-    >&2 echo "$flac2mp3_message"
+    echo "$flac2mp3_message" >&2
   fi
 else
   # No URL means we can't call the API
   flac2mp3_message="Warn|Unable to determine Lidarr API URL."
   echo "$flac2mp3_message" | log
-  >&2 echo "$flac2mp3_message"
+  echo "$flac2mp3_message" >&2
 fi
 
 # Cool bash feature
