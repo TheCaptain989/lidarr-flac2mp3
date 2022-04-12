@@ -405,7 +405,7 @@ BEGIN {
   if (Bitrate) {
     if (Debug >= 1) print "Debug|Using constant bitrate of "Bitrate
     BrCommand="-b:a "Bitrate
-  } else if (VBR) {
+  } else if (VBR >= 0) {
     if (Debug >= 1) print "Debug|Using variable quality of "VBR
     BrCommand="-q:a "VBR
   } else if (FFmpegADV) {
