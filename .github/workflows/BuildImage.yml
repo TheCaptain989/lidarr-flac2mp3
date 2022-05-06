@@ -5,8 +5,6 @@ on: [push, pull_request, workflow_dispatch]
 env:
   ENDPOINT: "thecaptain989/lidarr-flac2mp3"
 
-
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -20,6 +18,8 @@ jobs:
           cat <<EOF
           Building version $VERSION
           EOF
+          # Insert version into script
+          sed -i -e "s/{{VERSION}}/$VERSION/" /usr/local/bin/flac2mp3.sh
           # Build image
           docker build --build-arg VERSION=$VERSION \
                        --no-cache \

@@ -28,18 +28,20 @@
 
 ### Variables
 export flac2mp3_script=$(basename "$0")
+export flac2mp3_ver="{{VERSION}}"
 export flac2mp3_pid=$$
 export flac2mp3_config=/config/config.xml
 export flac2mp3_log=/config/logs/flac2mp3.txt
 export flac2mp3_maxlogsize=1024000
 export flac2mp3_maxlog=4
 export flac2mp3_debug=0
+export flac2mp3_keep=0
 export flac2mp3_type=$(printenv | sed -n 's/_eventtype *=.*$//p')
 
 # Usage function
 function usage {
   usage="
-$flac2mp3_script
+$flac2mp3_script   Version: $flac2mp3_ver
 Audio conversion script designed for use with Lidarr
 
 Source: https://github.com/TheCaptain989/lidarr-flac2mp3
@@ -49,41 +51,60 @@ Usage:
   $0 [OPTIONS] {-f|--file} <audio_file>
 
 Options:
-  -d, --debug [<level>]          enable debug logging
-                                 Level is optional, default of 1 (low)
-  -b, --bitrate <bitrate>        set output quality in constant bits per second [default: 320k]
-                                 Ex: 160k, 240k, 300000
-  -v, --quality <quality>        set variable bitrate; quality between 0-9
-                                 0 is highest quality, 9 is lowest
-                                 See https://trac.ffmpeg.org/wiki/Encode/MP3 for more details
-  -a, --advanced \"<options>\"   advanced ffmpeg options enclosed in quotes
-                                 Specified options replace all script defaults and are sent as
-                                 entered to ffmpeg for processing.
-                                 See https://ffmpeg.org/ffmpeg.html#Options for details on valid options.
-                                 WARNING: You must specify an audio codec!
-                                 WARNING: Invalid options could result in script failure!
-                                 Requires -e option to also be specified
-                                 See https://github.com/TheCaptain989/lidarr-flac2mp3 for more details
-  -e, --extension <extension>    file extension for output file, with or without dot
-                                 Required when -a is specified!
-  -f, --file <audio_file>        if included, the script enters batch mode
-                                 and converts the specified audio file.
-                                 WARNING: Do not use this argument when called
-                                 from Lidarr!
-      --help                     display this help and exit
+  -d, --debug [<level>]         enable debug logging
+                                Level is optional, default of 1 (low)
+  -b, --bitrate <bitrate>       set output quality in constant bits per second
+                                [default: 320k]
+                                Ex: 160k, 240k, 300000
+  -v, --quality <quality>       set variable bitrate; quality between 0-9
+                                0 is highest quality, 9 is lowest
+                                For more details, see:
+                                https://trac.ffmpeg.org/wiki/Encode/MP3
+  -a, --advanced \"<options>\"    advanced ffmpeg options enclosed in quotes
+                                Specified options replace all script defaults
+                                and are sent as entered to ffmpeg for
+                                processing.
+                                For more details on valid options, see:
+                                https://ffmpeg.org/ffmpeg.html#Options
+                                WARNING: You must specify an audio codec!
+                                WARNING: Invalid options could result in script
+                                failure!
+                                Requires -e option to also be specified
+                                For more details, see:
+                                https://github.com/TheCaptain989/lidarr-flac2mp3
+  -e, --extension <extension>   file extension for output file, with or without
+                                dot
+                                Required when -a is specified!
+  -f, --file <audio_file>       the script enters batch mode, using the
+                                specified audio file as input
+                                WARNING: Do not use this argument when called
+                                from Lidarr!
+  -o, --output <directory>      specify an alternate directory for the converted
+                                audio file(s)
+  -k, --keep-file               do not delete the source file or move it to the
+                                Lidarr Recycle bin
+                                WARNING: If the source file has the same
+                                extension/name as the newly created file, it
+                                will still be overwritten
+      --help                    display this help and exit
+      --version                 display script version and exit
 
 Examples:
-  $flac2mp3_script -b 320k                # Output 320 kbit/s MP3 (non VBR; same as default behavior)
-  $flac2mp3_script -v 0                   # Output variable bitrate MP3, VBR 220-260 kbit/s
-  $flac2mp3_script -d -b 160k             # Enable debugging level 1 and set output a 160 kbit/s MP3
+  $flac2mp3_script -b 320k           # Output 320 kbit/s MP3 (non VBR; same as
+                                  default behavior)
+  $flac2mp3_script -v 0              # Output variable bitrate MP3, VBR 220-260
+                                  kbit/s
+  $flac2mp3_script -d -b 160k        # Enable debugging level 1 and set output a
+                                  160 kbit/s MP3
   $flac2mp3_script -a \"-vn -c:a libopus -b:a 192K\" -e .opus
-                                          # Convert to Opus format, VBR 192 kbit/s, no cover art
+                                # Convert to Opus format, VBR 192 kbit/s, no
+                                  cover art
   $flac2mp3_script -a \"-y -map 0 -c:a aac -b:a 240K -c:v copy\" -e mp4
-                                          # Convert to MP4 format, using AAC 240 kbit/s audio,
-                                          # cover art, overwrite file
-  $flac2mp3_script --file \"/path/to/audio/a-ha/Hunting High and Low/01 Take on Me.flac\"
-                                          # Batch Mmode
-                                          # Output 320 kbit/s MP3
+                                # Convert to MP4 format, using AAC 240 kbit/s
+                                  audio, cover art, overwrite file
+  $flac2mp3_script -f \"/path/to/audio/a-ha/Hunting High and Low/01 Take on Me.flac\"
+                                # Batch Mode
+                                  Output 320 kbit/s MP3
 "
   echo "$usage" >&2
 }
@@ -102,6 +123,10 @@ while (( "$#" )); do
       ;;
     --help ) # Display usage
       usage
+      exit 0
+      ;;
+    --version ) # Display version
+      echo "$flac2mp3_script $flac2mp3_ver"
       exit 0
       ;;
     -f|--file ) # Batch Mode
@@ -179,8 +204,24 @@ while (( "$#" )); do
         usage
         exit 3
       fi
-      # Test for dot
+      # Test for dot prefix
       [ "${flac2mp3_extension:0:1}" != "." ] && flac2mp3_extension=".${flac2mp3_extension}"
+      ;;
+    -o|--output ) # Set output directory
+      if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
+        export flac2mp3_output="$2"
+        shift 2
+      else
+        echo "Error|Invalid option: $1 requires an argument." >&2
+        usage
+        exit 3
+      fi
+      # Test for trailing slash
+      [ "${flac2mp3_output: -1:1}" != "/" ] && flac2mp3_output="${flac2mp3_output}/"
+      ;;
+    -k|--keep-file ) # Do not delete source file(s)
+      export flac2mp3_keep=1
+      shift
       ;;
     -*|--*=) # Unknown option
       echo "Error|Unknown option: $1" >&2
@@ -390,12 +431,14 @@ fi
 flac2mp3_message+=", Track(s): ${flac2mp3_tracks}"
 echo "${flac2mp3_message}" | log
 
-echo "$flac2mp3_tracks" | awk -v Debug=$flac2mp3_debug \
+echo -n "$flac2mp3_tracks" | awk -v Debug=$flac2mp3_debug \
 -v Recycle="$flac2mp3_recyclebin" \
 -v Bitrate="$flac2mp3_bitrate" \
 -v VBR="$flac2mp3_vbrquality" \
 -v FFmpegADV="$flac2mp3_ffmpegadv" \
--v EXT="$flac2mp3_extension" '
+-v EXT="$flac2mp3_extension" \
+-v Output="$flac2mp3_output" \
+-v Keep="$flac2mp3_keep" '
 BEGIN {
   FFmpeg="/usr/bin/ffmpeg"
   FS="|"
@@ -413,11 +456,12 @@ BEGIN {
     if (Debug >= 1) print "Debug|Exporting with file extension "EXT
   }
 }
-/\.flac/ {
+/\.flac$/ {
   # Get each FLAC file name and create a new MP3 (or other) name
   Track=$1
-  sub(/\n/,"",Track)
   NewTrack=substr(Track, 1, length(Track)-5) EXT
+  # Redirect output if asked
+  if (Output) sub(/^.*\//,Output ,NewTrack)
   print "Info|Writing: "NewTrack
   # Check for advanced options
   if (FFmpegADV) FFmpegOPTS=FFmpegADV
@@ -428,24 +472,27 @@ BEGIN {
   if (Result) {
     print "Error|Exit code "Result" converting \""Track"\""
   } else {
-    if (Recycle == "") {
-      # No Recycle Bin, so check for non-zero size new file and delete the old one
-      if (Debug >= 1) print "Debug|Deleting: \""Track"\" and setting permissions on \""NewTrack"\""
-      #Command="[ -s \""NewTrack"\" ] && [ -f \""Track"\" ] && chown --reference=\""Track"\" \""NewTrack"\" && chmod --reference=\""Track"\" \""NewTrack"\" && rm \""Track"\""
-      Command="if [ -s \""NewTrack"\" ]; then if [ -f \""Track"\" ]; then chown --reference=\""Track"\" \""NewTrack"\"; chmod --reference=\""Track"\" \""NewTrack"\"; rm \""Track"\"; fi; fi"
-      if (Debug >= 2) print "Debug|Executing: "Command
-      system(Command)
+    if (Keep == 1) {
+      # Do not delete the source file
+      if (Debug >= 1) print "Debug|Keeping original: \""Track"\" and setting permissions on \""NewTrack"\""
+      Command="if [ -s \""NewTrack"\" ]; then if [ -f \""Track"\" ]; then chown --reference=\""Track"\" \""NewTrack"\"; chmod --reference=\""Track"\" \""NewTrack"\"; fi; fi"
     } else {
-      # Recycle Bin is configured, so check if it exists, append a relative path to it from the track, check for non-zero size new file, and move the old one to the Recycle Bin
-      match(Track,/^\/?[^\/]+\//)
-      RecPath=substr(Track,RSTART+RLENGTH)
-      sub(/[^\/]+$/,"",RecPath)
-      RecPath=Recycle RecPath
-      if (Debug >= 1) print "Debug|Recycling: \""Track"\" to \""RecPath"\" and setting permissions on \""NewTrack"\""
-      Command="if [ ! -e \""RecPath"\" ]; then mkdir -p \""RecPath"\"; fi; if [ -s \""NewTrack"\" ]; then if [ -f \""Track"\" ]; then chown --reference=\""Track"\" \""NewTrack"\"; chmod --reference=\""Track"\" \""NewTrack"\"; mv -t \""RecPath"\" \""Track"\"; fi; fi"
-      if (Debug >= 2) print "Debug|Executing: "Command
-      system(Command)
+      if (Recycle == "") {
+        # No Recycle Bin, so check for non-zero size new file and delete the old one
+        if (Debug >= 1) print "Debug|Deleting: \""Track"\" and setting permissions on \""NewTrack"\""
+        Command="if [ -s \""NewTrack"\" ]; then if [ -f \""Track"\" ]; then chown --reference=\""Track"\" \""NewTrack"\"; chmod --reference=\""Track"\" \""NewTrack"\"; rm \""Track"\"; fi; fi"
+      } else {
+        # Recycle Bin is configured, so check if it exists, append a relative path to it from the track, check for non-zero size new file, and move the old one to the Recycle Bin
+        match(Track,/^\/?[^\/]+\//)
+        RecPath=substr(Track,RSTART+RLENGTH)
+        sub(/[^\/]+$/,"",RecPath)
+        RecPath=Recycle RecPath
+        if (Debug >= 1) print "Debug|Recycling: \""Track"\" to \""RecPath"\" and setting permissions on \""NewTrack"\""
+        Command="if [ ! -e \""RecPath"\" ]; then mkdir -p \""RecPath"\"; fi; if [ -s \""NewTrack"\" ]; then if [ -f \""Track"\" ]; then chown --reference=\""Track"\" \""NewTrack"\"; chmod --reference=\""Track"\" \""NewTrack"\"; mv -t \""RecPath"\" \""Track"\"; fi; fi"
+      }
     }
+    if (Debug >= 2) print "Debug|Executing: "Command
+    system(Command)
   }
 }
 ' | log
@@ -464,6 +511,8 @@ fi
 # Call Lidarr API to RescanArtist
 if [ "$flac2mp3_type" = "batch" ]; then
   [ $flac2mp3_debug -ge 1 ] && echo "Debug|Cannot use API in batch mode." | log
+elif [ $flac2mp3_keep -eq 1 ]; then
+  echo "Info|Original audio file(s) kept, no rescan performed." | log
 elif [ -n "$flac2mp3_api_url" ]; then
   # Check for artist ID
   if [ "$lidarr_artist_id" ]; then
