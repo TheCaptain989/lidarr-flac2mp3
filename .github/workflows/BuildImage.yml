@@ -21,8 +21,7 @@ jobs:
           # Insert version into scripts
           sed -i -e "s/{{VERSION}}/$VERSION/" $GITHUB_WORKSPACE/root/usr/local/bin/flac2mp3.sh $GITHUB_WORKSPACE/root/etc/cont-init.d/98-flac2mp3
           # Build image
-          docker build --build-arg VERSION=$VERSION \
-                       --no-cache \
+          docker build --no-cache \
                        --tag ${ENDPOINT}:${{ github.sha }} .
 
       - name: Tag image
