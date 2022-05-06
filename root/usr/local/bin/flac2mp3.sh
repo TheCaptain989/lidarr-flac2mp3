@@ -22,6 +22,7 @@
 #  2 - ffmpeg not found
 #  3 - invalid command line arguments
 #  5 - specified audio file not found
+#  6 - error when creating output directory
 #  7 - unknown eventtype environment variable
 # 10 - awk script generated an error
 # 20 - general error
@@ -79,18 +80,17 @@ Options:
                                 specified audio file as input
                                 WARNING: Do not use this argument when called
                                 from Lidarr!
-  -o, --output <directory>      specify an alternate directory for the converted
-                                audio file(s)
+  -o, --output <directory>      specify a directory for the converted audio
+                                file(s)
+                                This will be created if it does not exist.
   -k, --keep-file               do not delete the source file or move it to the
                                 Lidarr Recycle bin
-                                WARNING: If the source file has the same
-                                extension/name as the newly created file, it
-                                will still be overwritten
+                                This also disables the Lidarr rescan.
       --help                    display this help and exit
       --version                 display script version and exit
 
 Examples:
-  $flac2mp3_script -b 320k           # Output 320 kbit/s MP3 (non VBR; same as
+  $flac2mp3_script -b 320k           # Output 320 kbit/s MP3 (non-VBR; same as
                                   default behavior)
   $flac2mp3_script -v 0              # Output variable bitrate MP3, VBR 220-260
                                   kbit/s
@@ -105,6 +105,10 @@ Examples:
   $flac2mp3_script -f \"/path/to/audio/a-ha/Hunting High and Low/01 Take on Me.flac\"
                                 # Batch Mode
                                   Output 320 kbit/s MP3
+  $flac2mp3_script -o \"/path/to/audio\" -k
+                                # Place the converted file(s) in specified
+                                  directory and do not delete the original audio
+                                  file(s).
 "
   echo "$usage" >&2
 }
@@ -371,7 +375,7 @@ elif [ -f "$flac2mp3_config" ]; then
   flac2mp3_result=$(curl -s -H "X-Api-Key: $flac2mp3_apikey" \
     -X GET "$flac2mp3_api_url/system/status")
   flac2mp3_return=$?; [ "$flac2mp3_return" != 0 ] && {
-    flac2mp3_message="Error|[$flac2mp3_return] curl or jq error when parsing: \"$flac2mp3_api_url/system/status\""
+    flac2mp3_message="Error|[$flac2mp3_return] curl error when parsing: \"$flac2mp3_api_url/system/status\""
     echo "$flac2mp3_message" | log
     echo "$flac2mp3_message" >&2
   }
@@ -415,6 +419,18 @@ if [ "$flac2mp3_type" = "batch" -a ! -f "$flac2mp3_tracks" ]; then
   exit 5
 fi
 
+# If specified, check if destination folder exists and create if necessary
+if [ "$flac2mp3_output" -a ! -d "$flac2mp3_output" ]; then
+  [ $flac2mp3_debug -ge 1 ] && echo "Debug|Destination directory does not exist.  Creating: $flac2mp3_output" | log
+  mkdir -p "$flac2mp3_output"
+  flac2mp3_return=$?; [ "$flac2mp3_return" != 0 ] && {
+    flac2mp3_message="Error|[$flac2mp3_return] mkdir returned an error.  Unable to create output directory."
+    echo "$flac2mp3_message" | log
+    echo "$flac2mp3_message" >&2
+    exit 6
+  }
+fi
+
 # Legacy one-liner script for posterity
 #find "$lidarr_artist_path" -name "*.flac" -exec bash -c 'ffmpeg -loglevel warning -i "{}" -y -acodec libmp3lame -b:a 320k "${0/.flac}.mp3" && rm "{}"' {} \;
 
@@ -427,6 +443,12 @@ if [ -z "$flac2mp3_ffmpegadv" ]; then
   flac2mp3_message+=", Export bitrate: ${flac2mp3_bitrate:-$flac2mp3_vbrquality}"
 else
   flac2mp3_message+=", Advanced options: '${flac2mp3_ffmpegadv}', File extension: ${flac2mp3_extension}"
+fi
+if [ -n "$flac2mp3_output" ]; then
+  flac2mp3_message+=", Output: ${flac2mp3_output}"
+fi
+if [ $flac2mp3_keep = 1 ]; then
+  flac2mp3_message+=", Keep source"
 fi
 flac2mp3_message+=", Track(s): ${flac2mp3_tracks}"
 echo "${flac2mp3_message}" | log
@@ -501,8 +523,8 @@ BEGIN {
 
 # Check for awk script completion
 flac2mp3_return="${PIPESTATUS[1]}"    # captures awk exit status
-if [ $flac2mp3_return != "0" ]; then
-  flac2mp3_message="Error|Script exited abnormally.  File permissions issue?"
+if [ "$flac2mp3_return" != 0 ]; then
+  flac2mp3_message="Error|[$flac2mp3_return] Script exited abnormally.  File permissions issue?"
   echo "$flac2mp3_message" | log
   echo "$flac2mp3_message" >&2
   exit 10
