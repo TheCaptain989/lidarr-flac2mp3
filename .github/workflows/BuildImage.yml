@@ -19,7 +19,7 @@ jobs:
           Building version $VERSION
           EOF
           # Insert version into script
-          sed -i -e "s/{{VERSION}}/$VERSION/" /root/usr/local/bin/flac2mp3.sh
+          sed -i -e "s/{{VERSION}}/$VERSION/" $GITHUB_WORKSPACE/root/usr/local/bin/flac2mp3.sh
           # Build image
           docker build --build-arg VERSION=$VERSION \
                        --no-cache \
