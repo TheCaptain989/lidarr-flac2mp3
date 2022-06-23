@@ -467,6 +467,9 @@ BEGIN {
   RS="|"
   IGNORECASE=1
   if (EXT == "") EXT=".mp3"
+  if (Debug == 0) FFmpegLOG="error"
+  else if (Debug == 1) FFmpegLOG="warning"
+  else if (Debug >= 2) FFmpegLOG="info"
   if (Bitrate) {
     if (Debug >= 1) print "Debug|Using constant bitrate of "Bitrate
     BrCommand="-b:a "Bitrate
@@ -489,8 +492,9 @@ BEGIN {
   if (FFmpegADV) FFmpegOPTS=FFmpegADV
   else FFmpegOPTS="-c:v copy -map 0 -y -acodec libmp3lame "BrCommand" -write_id3v1 1 -id3v2_version 3"
   # Convert the track
-  if (Debug >= 1) print "Debug|Executing: nice "FFmpeg" -loglevel error -i \""Track"\" "FFmpegOPTS" \""NewTrack"\""
-  Result=system("nice "FFmpeg" -loglevel error -i \""Track"\" "FFmpegOPTS" \""NewTrack"\" 2>&1")
+  if (Debug >= 1) print "Debug|Executing: nice "FFmpeg" -loglevel "FFmpegLOG" -nostdin -i \""Track"\" "FFmpegOPTS" \""NewTrack"\""
+  Result=system("nice "FFmpeg" -loglevel "FFmpegLOG" -nostdin -i \""Track"\" "FFmpegOPTS" \""NewTrack"\" 2>&1")
+  if (Debug >= 2) print "Debug|ffmpeg exited"
   if (Result) {
     print "Error|Exit code "Result" converting \""Track"\""
   } else {
@@ -523,6 +527,7 @@ BEGIN {
 
 # Check for awk script completion
 flac2mp3_return="${PIPESTATUS[1]}"    # captures awk exit status
+[ $flac2mp3_debug -ge 2 ] && echo "Debug|awk exited with code: $flac2mp3_return" | log
 if [ "$flac2mp3_return" != 0 ]; then
   flac2mp3_message="Error|[$flac2mp3_return] Script exited abnormally.  File permissions issue?"
   echo "$flac2mp3_message" | log
