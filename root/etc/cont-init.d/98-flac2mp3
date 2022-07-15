@@ -8,6 +8,7 @@ Repos:
   Prod: https://github.com/linuxserver/docker-mods/tree/lidarr-flac2mp3
 
 Version: {{VERSION}}
+FLAC2CUSTOM_ARGS: $FLAC2CUSTOM_ARGS
 ----------------
 EOF
 
@@ -36,11 +37,11 @@ fi
 # Change ownership
 if [ $(stat -c '%G' /usr/local/bin/flac2mp3.sh) != "abc" ]; then
   echo "Changing ownership on scripts."
-  chown abc:abc /usr/local/bin/*2*.sh
+  chown abc:abc /usr/local/bin/flac2*.sh
 fi
 
 # Make executable
 if [ ! -x /usr/local/bin/flac2mp3.sh ]; then
   echo "Making scripts executable."
-  chmod +x /usr/local/bin/*2*.sh
+  chmod +x /usr/local/bin/flac2*.sh
 fi

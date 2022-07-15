@@ -105,7 +105,7 @@ ffmpeg -loglevel error -i "input.flac" ${options} "output.${extension}"
 -d -b 160k     # Enable debugging level 1, and output a 160 kbit/s MP3
 -a "-c:v libtheora -map 0 -q:v 10 -c:a libopus -b:a 192k" -e .opus
                # Convert to Opus format, VBR 192 kbit/s, cover art, no overwright
--a \"-vn -c:a libopus -b:a 192K\" -e .opus -r '\.mp3$'
+-a "-vn -c:a libopus -b:a 192K" -e .opus -r '\.mp3$'
                # Convert .mp3 files to Opus format.
 -a "-y -map 0 -c:a aac -b:a 240k -c:v copy" -e mp4
                # Convert to MP4 format, using AAC 240 kbit/s audio, cover art, overwrite file
@@ -128,8 +128,21 @@ flac2mp3-debug.sh        # Enable debugging, level 1
 flac2mp3-debug-2.sh      # Enable debugging, level 2
 flac2mp3-vbr.sh          # Use variable bit rate MP3, quality 0
 flac2opus.sh             # Convert to Opus format using .opus extension, 192 kbit/s, no covert art
-mp32opus.sh              # Convert .mp3 files to Opus format
 flac2alac.sh             # Convert to Apple Lossless using an .m4a extension
+flac2custom.sh           # Calls flac2mp3 with FLAC2CUSTOM_ARGS
+```
+
+`flac2custom.sh` uses arguments provided by `FLAC2CUSTOM_ARGS` environment variable. This allows advanced use case without having to provide a custom script. For instance, the following value would convert any .mp3 to opus :
+
+```
+-a "-vn -c:a libopus -b:a 192k" -e .opus -r '\.mp3$'
+```
+
+Make sure to correctly escape special characters when using this, in docker compose the previous command would need an extra `$` :
+
+```yaml
+environment:
+  - FLAC2CUSTOM_ARGS=-a "-vn -c:a libopus -b:a 192k" -e .opus -r '\.mp3$$'
 ```
 
 #### Example Wrapper Script
