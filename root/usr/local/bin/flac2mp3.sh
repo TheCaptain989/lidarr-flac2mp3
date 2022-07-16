@@ -506,7 +506,8 @@ BEGIN {
 /'"$flac2mp3_regex"'/ {
   # Get each FLAC (or other) file name and create a new MP3 (or other) name
   Track=$1
-  NewTrack=substr(Track, 1, length(Track)-5) EXT
+  last=split($1,parts, ".")
+  NewTrack=substr(Track, 1, length(Track)-length(parts[last])) EXT
   # Redirect output if asked
   if (Output) sub(/^.*\//,Output ,NewTrack)
   print "Info|Writing: "NewTrack
