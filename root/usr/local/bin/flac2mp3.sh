@@ -507,7 +507,7 @@ BEGIN {
   # Get each FLAC (or other) file name and create a new MP3 (or other) name
   Track=$1
   last=split($1,parts, ".")
-  NewTrack=substr(Track, 1, length(Track)-length(parts[last])) EXT
+  NewTrack=substr(Track, 1, length(Track)-length(parts[last])-1) EXT
   # Redirect output if asked
   if (Output) sub(/^.*\//,Output ,NewTrack)
   print "Info|Writing: "NewTrack
