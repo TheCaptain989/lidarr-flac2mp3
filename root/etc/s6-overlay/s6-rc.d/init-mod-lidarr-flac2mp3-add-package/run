@@ -13,19 +13,19 @@ EOF
 
 # Determine if setup is needed
 if [ ! -f /usr/bin/ffmpeg ]; then
-    echo "**** Adding ffmpeg to package install list ****"
-    echo "ffmpeg" >> /mod-repo-packages-to-install.list
+  echo "**** Adding ffmpeg to package install list ****"
+  echo "ffmpeg" >> /mod-repo-packages-to-install.list
 fi
 
 # Change ownership
 if [ $(stat -c '%G' /usr/local/bin/flac2mp3.sh) != "abc" ]; then
-    echo "Changing ownership on scripts."
-    chown abc:abc /usr/local/bin/flac2*.sh
+  echo "Changing ownership on scripts."
+  chown abc:abc /usr/local/bin/flac2*.sh
 fi
 
 # Make executable
 if [ ! -x /usr/local/bin/flac2mp3.sh ]; then
-    echo "Making scripts executable."
-    chmod +x /usr/local/bin/flac2*.sh
+  echo "Making scripts executable."
+  chmod +x /usr/local/bin/flac2*.sh
 fi
 
