@@ -52,7 +52,7 @@ Production Container info: ![Docker Image Size](https://img.shields.io/docker/im
 
    This will use the defaults to create a 320Kbps MP3 file.
 
-   *For any other setting, you **must** either use one of the [included wrapper scripts](./README.md#included-wrapper-scripts) or create a custom script with the command line options you desire.  See the [Syntax](./README.md#syntax) section below.*
+   *For any other setting, you **must** either use one of the supported methods to pass arguments to the script.  See the [Syntax](./README.md#syntax) section below.*
 
 ## Usage
 New file(s) with will be placed in the same directory as the original FLAC file(s) (unless redirected with the `--output` option below) and have the same owner and permissions. Existing files with the same track name will be overwritten.
@@ -61,16 +61,15 @@ By default, if you've configured Lidarr's **Recycle Bin** path correctly, the or
 ![danger] **NOTE:** If you have *not* configured the Recycle Bin, the original FLAC audio file(s) will be deleted and permanently lost.  This behavior may be modifed with the `--keep-file` option.
 
 ### Syntax
->**Note:** The **Arguments** field for Custom Scripts was removed in Lidarr release [v0.7.0.1347](https://github.com/lidarr/Lidarr/commit/b9d240924f8965ebb2c5e307e36b810ae076101e "Lidarr commit notes") due to security concerns.
-To support options with this version and later, a wrapper script can be manually created that will call *flac2mp3.sh* with the required arguments.
+>**Note:** The _Arguments_ field for Custom Scripts was removed in Lidarr release [v0.7.0.1347](https://github.com/lidarr/Lidarr/commit/b9d240924f8965ebb2c5e307e36b810ae076101e "Lidarr commit notes") due to security concerns.
+
+To supply arguments to the script, you **must** either use one of the [included wrapper scripts](./README.md#included-wrapper-scripts), create a [custom wrapper script](./README.md#example-wrapper-script), or set the `FLAC2MP3_ARGS` [environment variable](./README.md#environment-variable).
 
 #### Command Line Options and Arguments
 The script may be called with optional command line arguments.
 
 The syntax for the command line is:  
-`flac2mp3 [OPTIONS] [{-b|--bitrate} <bitrate> | {-v|--quality} <quality> | {-a|--advanced} "<options>" {-e|--extension} <extension>]`  
-OR  
-`flac2mp3 [OPTIONS] {-f|--file} <audio_file>`
+`flac2mp3 [{-d|--debug}] [{-b|--bitrate} <bitrate> | {-v|--quality} <quality> | {-a|--advanced} "<options>" {-e|--extension} <extension>] [{-f|--file} <audio_file>] [{-k|--keepfile}] [{-o|--output} <directory>] [{-r|--regex} '<regex>']`  
 
 Where:
 
@@ -80,11 +79,11 @@ Option|Argument|Description
 -b, --bitrate|\<bitrate\>|Sets the output quality in constant bits per second (CBR).<br/>Examples: 160k, 240k, 300000<br/>**Note:** May not be specified with `-v`, `-a`, or `-e`.
 -v, --quality|\<quality\>|Sets the output variable bit rate (VBR).<br/>Specify a value between 0 and 9, with 0 being the highest quality.<br/>See the [FFmpeg MP3 Encoding Guide](https://trac.ffmpeg.org/wiki/Encode/MP3) for more details.<br/>**Note:** May not be specified with `-b`, `-a`, or `-e`.
 -a, --advanced|\"\<options\>\"|Advanced ffmpeg options.<br/>The specified `options` replace all script defaults and are sent directly to ffmpeg.<br/>The `options` value must be enclosed in quotes.<br/>See [FFmpeg Options](https://ffmpeg.org/ffmpeg.html#Options) for details on valid options, and [Guidelines for high quality audio encoding](https://trac.ffmpeg.org/wiki/Encode/HighQualityAudio) for suggested usage.<br/>**Note:** Requires the `-e` option to also be specified. May not be specified with `-v` or `-b`.<br/>![danger] **WARNING:** You must specify an audio codec (by including a `-c:a <codec>` ffmpeg option) or the resulting file will contain no audio!<br/>![danger] **WARNING:** Invalid `options` could result in script failure!
--e, --extension|\<extension\>|Sets the output file extension<br/>The extension may be prefixed by a dot (".") or not.<br/>**Note:** Requires the `-a` option to also be specified. May not be specified with `-v` or `-b`.
+-e, --extension|\<extension\>|Sets the output file extension.<br/>The extension may be prefixed by a dot (".") or not.<br/>Example: .ogg<br/>**Note:** Requires the `-a` option to also be specified. May not be specified with `-v` or `-b`.
 -f, --file|<audio_file>|If included, the script enters **[Batch Mode](./README.md#batch-mode)** and converts the specified audio file.<br/>![danger] **WARNING:** Do not use this argument when called from Lidarr!
 -o, --output|\<directory\>|Converted audio file(s) are saved to `directory` instead of being located in the same directory as the source audio file.<br/>The path will be created if it does not exist.
 -k, --keep-file| |Do not delete the source file or move it to the Lidarr Recycle bin.<br/>**Note:** This also disables triggering a Lidarr rescan after conversion.
--r, --regex|\<regex\>|Sets the regex used to match input files.<br/>Defaults is "\.flac$".
+-r, --regex|'\<regex\>'|Sets the regular expression used to select input files.<br/>The `regex` value should be enclosed in single quotes.<br/>Defaults to `'\.flac$'`.
 --help| |Display help and exit.
 --version| |Display version and exit.
 
@@ -103,6 +102,7 @@ ffmpeg -loglevel error -i "input.flac" ${options} "output.${extension}"
 -b 320k        # Output 320 kbit/s MP3 (non-VBR; same as default behavior)
 -v 0           # Output variable bitrate MP3, VBR 220-260 kbit/s
 -d -b 160k     # Enable debugging level 1, and output a 160 kbit/s MP3
+-r '\.[^.]*$'  # Convert any file to MP3 (not just FLAC)
 -a "-c:v libtheora -map 0 -q:v 10 -c:a libopus -b:a 192k" -e .opus
                # Convert to Opus format, VBR 192 kbit/s, cover art, no overwright
 -a "-vn -c:a libopus -b:a 192K" -e .opus -r '\.mp3$'
@@ -116,9 +116,6 @@ ffmpeg -loglevel error -i "input.flac" ${options} "output.${extension}"
                # Place the converted file(s) in the specified directory and do not delete the original audio file(s).
 ```
 
-### Wrapper Scripts
-To supply arguments to the script, one of the included wrapper scripts may be used or a custom wrapper script must be created.
-
 #### Included Wrapper Scripts
 For your convenience, several wrapper scripts are included in the `/usr/local/bin/` directory.  
 You may use any of these scripts in place of the `flac2mp3.sh` mentioned in the [Installation](./README.md#installation) section above.
@@ -129,20 +126,6 @@ flac2mp3-debug-2.sh      # Enable debugging, level 2
 flac2mp3-vbr.sh          # Use variable bit rate MP3, quality 0
 flac2opus.sh             # Convert to Opus format using .opus extension, 192 kbit/s, no covert art
 flac2alac.sh             # Convert to Apple Lossless using an .m4a extension
-flac2custom.sh           # Calls flac2mp3 with FLAC2CUSTOM_ARGS
-```
-
-`flac2custom.sh` uses arguments provided by `FLAC2CUSTOM_ARGS` environment variable. This allows advanced use case without having to provide a custom script. For instance, the following value would convert any .mp3 to opus :
-
-```
--a "-vn -c:a libopus -b:a 192k" -e .opus -r '\.mp3$'
-```
-
-Make sure to correctly escape special characters when using this, in docker compose the previous command would need an extra `$` :
-
-```yaml
-environment:
-  - FLAC2CUSTOM_ARGS=-a "-vn -c:a libopus -b:a 192k" -e .opus -r '\.mp3$$'
 ```
 
 #### Example Wrapper Script
@@ -160,6 +143,25 @@ chmod +x /config/flac2mp3-custom.sh
 Then put `/config/flac2mp3-custom.sh` in the **Path** field in place of `/usr/local/bin/flac2mp3.sh` mentioned in the [Installation](./README.md#installation) section above.
 
 >**Note:** If you followed the Linuxserver.io recommendations when configuring your container, the `/config` directory will be mapped to an external storage location.  It is therefore recommended to place custom scripts in the `/config` directory so they will survive container updates, but they may be placed anywhere that is accessible by Lidarr.
+
+### Environment Variable
+The `flac2mp3.sh` script also allows the use of arguments provided by the `FLAC2MP3_ARGS` environment variable. This allows advanced use cases without having to provide a custom script.
+
+For example, the following value would convert any .mp3 to Opus:
+```
+FLAC2MP3_ARGS=-a "-vn -c:a libopus -b:a 192k" -e .opus -r '\.mp3$'
+```
+
+Make sure to correctly escape special characters when using this method. In Docker Compose, the previous command would need an extra `$`:
+```yaml
+environment:
+  - FLAC2MP3_ARGS=-a "-vn -c:a libopus -b:a 192k" -e .opus -r '\.mp3$$'
+```
+
+>**Note:** The environment variable settings are _only_ used when **no** command line arguments are present. **Any** command line argument will disable the use of the environment variable.
+
+*Example Synology Configuration*  
+![flac2mp3](.assets/lidarr-synology-2.png "Synology container settings")
 
 ### Triggers
 The only events/notification triggers that are supported are **On Release Import** and **On Upgrade**

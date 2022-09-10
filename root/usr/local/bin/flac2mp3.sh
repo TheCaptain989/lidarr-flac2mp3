@@ -37,7 +37,6 @@ export flac2mp3_maxlogsize=1024000
 export flac2mp3_maxlog=4
 export flac2mp3_debug=0
 export flac2mp3_keep=0
-export flac2mp3_regex='\.flac$'
 export flac2mp3_type=$(printenv | sed -n 's/_eventtype *=.*$//p')
 
 # Usage function
@@ -86,10 +85,11 @@ Options:
                                 This will be created if it does not exist.
   -k, --keep-file               do not delete the source file or move it to the
                                 Lidarr Recycle bin
+  -r, --regex  '<regex>'        regex to match input files to convert
+                                [default: \.flac$]
                                 This also disables the Lidarr rescan.
       --help                    display this help and exit
       --version                 display script version and exit
-  -r, --regex                   regex to match input files to convert
 
 Examples:
   $flac2mp3_script -b 320k           # Output 320 kbit/s MP3 (non-VBR; same as
@@ -116,6 +116,16 @@ Examples:
 "
   echo "$usage" >&2
 }
+
+# Check for environment vairable arguments
+if [ -n "$FLAC2MP3_ARGS" ]; then
+  if [ -z "$#" ]; then
+    echo "Warning|FLAC2MP3_ARGS environment variable set but will be ignored because command line arguments were also specified." >&2
+  else
+    # Move the environment variable arguments to the command line
+    eval set -- "$FLAC2MP3_ARGS"
+  fi
+fi
 
 # Process arguments
 while (( "$#" )); do
@@ -485,41 +495,43 @@ echo -n "$flac2mp3_tracks" | awk -v Debug=$flac2mp3_debug \
 -v FFmpegADV="$flac2mp3_ffmpegadv" \
 -v EXT="$flac2mp3_extension" \
 -v Output="$flac2mp3_output" \
--v Keep="$flac2mp3_keep" '
+-v Keep="$flac2mp3_keep" \
+-v Pat="$flac2mp3_regex" '
 BEGIN {
-  FFmpeg="/usr/bin/ffmpeg"
-  FS="|"
-  RS="|"
-  IGNORECASE=1
-  if (EXT == "") EXT=".mp3"
-  if (Debug == 0) FFmpegLOG="error"
-  else if (Debug == 1) FFmpegLOG="warning"
-  else if (Debug >= 2) FFmpegLOG="info"
+  FFmpeg = "/usr/bin/ffmpeg"
+  FS = "|"
+  RS = "|"
+  IGNORECASE = 1
+  if (EXT == "") EXT = ".mp3"
+  if (Pat == "") Pat = "\.flac$"
+  if (Debug == 0) FFmpegLOG = "error"
+  else if (Debug == 1) FFmpegLOG = "warning"
+  else if (Debug >= 2) FFmpegLOG = "info"
   if (Bitrate) {
     if (Debug >= 1) print "Debug|Using constant bitrate of "Bitrate
-    BrCommand="-b:a "Bitrate
+    BrCommand = "-b:a "Bitrate
   } else if (VBR >= 0) {
     if (Debug >= 1) print "Debug|Using variable quality of "VBR
-    BrCommand="-q:a "VBR
+    BrCommand = "-q:a "VBR
   } else if (FFmpegADV) {
     if (Debug >= 1) print "Debug|Using advanced ffmpeg options: \""FFmpegADV"\""
     if (Debug >= 1) print "Debug|Exporting with file extension "EXT
   }
 }
-/'"$flac2mp3_regex"'/ {
+$1 ~ Pat {
   # Get each FLAC (or other) file name and create a new MP3 (or other) name
-  Track=$1
-  last=split($1,parts, ".")
-  NewTrack=substr(Track, 1, length(Track)-length(parts[last])-1) EXT
+  Track = $1
+  Last = split($1, Parts, ".")
+  NewTrack = substr(Track, 1, length(Track) - length(Parts[Last]) - 1) EXT
   # Redirect output if asked
-  if (Output) sub(/^.*\//,Output ,NewTrack)
+  if (Output) sub(/^.*\//,Output , NewTrack)
   print "Info|Writing: "NewTrack
   # Check for advanced options
-  if (FFmpegADV) FFmpegOPTS=FFmpegADV
-  else FFmpegOPTS="-c:v copy -map 0 -y -acodec libmp3lame "BrCommand" -write_id3v1 1 -id3v2_version 3"
+  if (FFmpegADV) FFmpegOPTS = FFmpegADV
+  else FFmpegOPTS = "-c:v copy -map 0 -y -acodec libmp3lame "BrCommand" -write_id3v1 1 -id3v2_version 3"
   # Convert the track
   if (Debug >= 1) print "Debug|Executing: nice "FFmpeg" -loglevel "FFmpegLOG" -nostdin -i \""Track"\" "FFmpegOPTS" \""NewTrack"\""
-  Result=system("nice "FFmpeg" -loglevel "FFmpegLOG" -nostdin -i \""Track"\" "FFmpegOPTS" \""NewTrack"\" 2>&1")
+  Result = system("nice "FFmpeg" -loglevel "FFmpegLOG" -nostdin -i \""Track"\" "FFmpegOPTS" \""NewTrack"\" 2>&1")
   if (Debug >= 2) print "Debug|ffmpeg exited"
   if (Result) {
     print "Error|Exit code "Result" converting \""Track"\""
@@ -527,20 +539,20 @@ BEGIN {
     if (Keep == 1) {
       # Do not delete the source file
       if (Debug >= 1) print "Debug|Keeping original: \""Track"\" and setting permissions on \""NewTrack"\""
-      Command="if [ -s \""NewTrack"\" ]; then if [ -f \""Track"\" ]; then chown --reference=\""Track"\" \""NewTrack"\"; chmod --reference=\""Track"\" \""NewTrack"\"; fi; fi"
+      Command = "if [ -s \""NewTrack"\" ]; then if [ -f \""Track"\" ]; then chown --reference=\""Track"\" \""NewTrack"\"; chmod --reference=\""Track"\" \""NewTrack"\"; fi; fi"
     } else {
       if (Recycle == "") {
         # No Recycle Bin, so check for non-zero size new file and delete the old one
         if (Debug >= 1) print "Debug|Deleting: \""Track"\" and setting permissions on \""NewTrack"\""
-        Command="if [ -s \""NewTrack"\" ]; then if [ -f \""Track"\" ]; then chown --reference=\""Track"\" \""NewTrack"\"; chmod --reference=\""Track"\" \""NewTrack"\"; rm \""Track"\"; fi; fi"
+        Command = "if [ -s \""NewTrack"\" ]; then if [ -f \""Track"\" ]; then chown --reference=\""Track"\" \""NewTrack"\"; chmod --reference=\""Track"\" \""NewTrack"\"; rm \""Track"\"; fi; fi"
       } else {
         # Recycle Bin is configured, so check if it exists, append a relative path to it from the track, check for non-zero size new file, and move the old one to the Recycle Bin
-        match(Track,/^\/?[^\/]+\//)
-        RecPath=substr(Track,RSTART+RLENGTH)
-        sub(/[^\/]+$/,"",RecPath)
-        RecPath=Recycle RecPath
+        match(Track, /^\/?[^\/]+\//)
+        RecPath = substr(Track, RSTART + RLENGTH)
+        sub(/[^\/]+$/, "", RecPath)
+        RecPath = Recycle RecPath
         if (Debug >= 1) print "Debug|Recycling: \""Track"\" to \""RecPath"\" and setting permissions on \""NewTrack"\""
-        Command="if [ ! -e \""RecPath"\" ]; then mkdir -p \""RecPath"\"; fi; if [ -s \""NewTrack"\" ]; then if [ -f \""Track"\" ]; then chown --reference=\""Track"\" \""NewTrack"\"; chmod --reference=\""Track"\" \""NewTrack"\"; mv -t \""RecPath"\" \""Track"\"; fi; fi"
+        Command = "if [ ! -e \""RecPath"\" ]; then mkdir -p \""RecPath"\"; fi; if [ -s \""NewTrack"\" ]; then if [ -f \""Track"\" ]; then chown --reference=\""Track"\" \""NewTrack"\"; chmod --reference=\""Track"\" \""NewTrack"\"; mv -t \""RecPath"\" \""Track"\"; fi; fi"
       }
     }
     if (Debug >= 2) print "Debug|Executing: "Command
