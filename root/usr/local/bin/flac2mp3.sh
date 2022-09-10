@@ -37,6 +37,7 @@ export flac2mp3_maxlogsize=1024000
 export flac2mp3_maxlog=4
 export flac2mp3_debug=0
 export flac2mp3_keep=0
+export flac2mp3_regex='\.flac$'
 export flac2mp3_type=$(printenv | sed -n 's/_eventtype *=.*$//p')
 
 # Usage function
@@ -88,6 +89,7 @@ Options:
                                 This also disables the Lidarr rescan.
       --help                    display this help and exit
       --version                 display script version and exit
+  -r, --regex                   regex to match input files to convert
 
 Examples:
   $flac2mp3_script -b 320k           # Output 320 kbit/s MP3 (non-VBR; same as
@@ -99,6 +101,8 @@ Examples:
   $flac2mp3_script -a \"-vn -c:a libopus -b:a 192K\" -e .opus
                                 # Convert to Opus format, VBR 192 kbit/s, no
                                   cover art
+  $flac2mp3_script -a \"-vn -c:a libopus -b:a 192K\" -e .opus -r '\.mp3$'
+                                # Convert .mp3 files to Opus format.
   $flac2mp3_script -a \"-y -map 0 -c:a aac -b:a 240K -c:v copy\" -e mp4
                                 # Convert to MP4 format, using AAC 240 kbit/s
                                   audio, cover art, overwrite file
@@ -225,6 +229,17 @@ while (( "$#" )); do
       ;;
     -k|--keep-file ) # Do not delete source file(s)
       export flac2mp3_keep=1
+      shift
+      ;;
+    -r|--regex ) # Sets the regex used to match input files
+      if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
+        export flac2mp3_regex="$2"
+        shift 2
+      else
+        echo "Error|Invalid option: $1 requires an argument." >&2
+        usage
+        exit 3
+      fi
       shift
       ;;
     -*|--*=) # Unknown option
@@ -456,6 +471,9 @@ fi
 if [ $flac2mp3_keep = 1 ]; then
   flac2mp3_message+=", Keep source"
 fi
+if [ -n "$flac2mp3_regex" ]; then
+  flac2mp3_message+=", Matching regex: '${flac2mp3_regex}'"
+fi
 flac2mp3_message+=", Track(s): ${flac2mp3_tracks}"
 echo "${flac2mp3_message}" | log
 
@@ -488,10 +506,11 @@ BEGIN {
     if (Debug >= 1) print "Debug|Exporting with file extension "EXT
   }
 }
-/\.flac$/ {
-  # Get each FLAC file name and create a new MP3 (or other) name
+/'"$flac2mp3_regex"'/ {
+  # Get each FLAC (or other) file name and create a new MP3 (or other) name
   Track=$1
-  NewTrack=substr(Track, 1, length(Track)-5) EXT
+  last=split($1,parts, ".")
+  NewTrack=substr(Track, 1, length(Track)-length(parts[last])-1) EXT
   # Redirect output if asked
   if (Output) sub(/^.*\//,Output ,NewTrack)
   print "Info|Writing: "NewTrack

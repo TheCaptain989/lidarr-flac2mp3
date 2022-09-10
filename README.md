@@ -2,7 +2,7 @@
 This is a development and test repo.  Visit the [production repository and branch](https://github.com/linuxserver/docker-mods/tree/lidarr-flac2mp3) for stable/production releases.
 
 # About
-A [Docker Mod](https://github.com/linuxserver/docker-mods) for the LinuxServer.io Lidarr Docker container that uses ffmpeg and a script to automatically convert downloaded FLAC files to MP3s.  Default output quality is 320Kbps constant bit rate.
+A [Docker Mod](https://github.com/linuxserver/docker-mods) for the LinuxServer.io Lidarr Docker container that uses ffmpeg and a script to automatically convert downloaded FLAC (or other format) files to MP3s.  Default output quality is 320Kbps constant bit rate.
 Advanced options act as a light wrapper to ffmpeg, allowing conversion to any supported audio format, including AAC, AC3, Opus, and many others.
 A [Batch Mode](./README.md#batch-mode) is also supported that allows usage outside of Lidarr.
 
@@ -84,6 +84,7 @@ Option|Argument|Description
 -f, --file|<audio_file>|If included, the script enters **[Batch Mode](./README.md#batch-mode)** and converts the specified audio file.<br/>![danger] **WARNING:** Do not use this argument when called from Lidarr!
 -o, --output|\<directory\>|Converted audio file(s) are saved to `directory` instead of being located in the same directory as the source audio file.<br/>The path will be created if it does not exist.
 -k, --keep-file| |Do not delete the source file or move it to the Lidarr Recycle bin.<br/>**Note:** This also disables triggering a Lidarr rescan after conversion.
+-r, --regex|\<regex\>|Sets the regex used to match input files.<br/>Defaults is "\.flac$".
 --help| |Display help and exit.
 --version| |Display version and exit.
 
@@ -104,6 +105,8 @@ ffmpeg -loglevel error -i "input.flac" ${options} "output.${extension}"
 -d -b 160k     # Enable debugging level 1, and output a 160 kbit/s MP3
 -a "-c:v libtheora -map 0 -q:v 10 -c:a libopus -b:a 192k" -e .opus
                # Convert to Opus format, VBR 192 kbit/s, cover art, no overwright
+-a "-vn -c:a libopus -b:a 192K" -e .opus -r '\.mp3$'
+               # Convert .mp3 files to Opus format.
 -a "-y -map 0 -c:a aac -b:a 240k -c:v copy" -e mp4
                # Convert to MP4 format, using AAC 240 kbit/s audio, cover art, overwrite file
 --file "/path/to/audio/a-ha/Hunting High and Low/01 Take on Me.flac"
@@ -126,6 +129,20 @@ flac2mp3-debug-2.sh      # Enable debugging, level 2
 flac2mp3-vbr.sh          # Use variable bit rate MP3, quality 0
 flac2opus.sh             # Convert to Opus format using .opus extension, 192 kbit/s, no covert art
 flac2alac.sh             # Convert to Apple Lossless using an .m4a extension
+flac2custom.sh           # Calls flac2mp3 with FLAC2CUSTOM_ARGS
+```
+
+`flac2custom.sh` uses arguments provided by `FLAC2CUSTOM_ARGS` environment variable. This allows advanced use case without having to provide a custom script. For instance, the following value would convert any .mp3 to opus :
+
+```
+-a "-vn -c:a libopus -b:a 192k" -e .opus -r '\.mp3$'
+```
+
+Make sure to correctly escape special characters when using this, in docker compose the previous command would need an extra `$` :
+
+```yaml
+environment:
+  - FLAC2CUSTOM_ARGS=-a "-vn -c:a libopus -b:a 192k" -e .opus -r '\.mp3$$'
 ```
 
 #### Example Wrapper Script
