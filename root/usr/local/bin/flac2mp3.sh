@@ -18,7 +18,7 @@
 
 # Exit codes:
 #  0 - success; or test
-#  1 - no audio file specified on command line
+#  1 - no audio tracks detected
 #  2 - ffmpeg not found
 #  3 - invalid command line arguments
 #  5 - specified audio file not found
@@ -121,12 +121,10 @@ Examples:
 if [ -n "$FLAC2MP3_ARGS" ]; then
   if [ $# -ne 0 ]; then
     flac2mp3_prelogmessage="Warning|FLAC2MP3_ARGS environment variable set but will be ignored because command line arguments were also specified."
-    echo "Other ARGS: '$@'"
   else
-    # Move the environment variable arguments to the command line
-    flac2mp3_prelogmessage="Info|Using settings in FLAC2MP3_ARGS"
+    # Move the environment variable arguments to the command line for processing
+    flac2mp3_prelogmessage="Info|Using settings from environment variable."
     eval set -- "$FLAC2MP3_ARGS"
-    echo "Env ARGS: '$@'"
   fi
 fi
 
@@ -159,7 +157,7 @@ while (( "$#" )); do
       else
         echo "Error|Invalid option: $1 requires an argument." >&2
         usage
-        exit 1
+        exit 3
       fi
       ;;
     -b|--bitrate ) # Set constant bit rate
@@ -350,7 +348,7 @@ function check_rescan {
       else
         # It may have timed out, so let's wait a second
         local flac2mp3_return=1
-        [ $flac2mp3_debug -ge 1 ] && echo "Debug|Job not done.  Waiting 1 second." | log
+        [ $flac2mp3_debug -ge 1 ] && echo "Debug|Job not done. Waiting 1 second." | log
         sleep 1
       fi
     fi
@@ -367,18 +365,18 @@ if [ ! -f "/usr/bin/ffmpeg" ]; then
   exit 2
 fi
 
-# Log FLAC2MP3_ARGS usage
-if [ -n "$flac2mp3_prelogmessage" ]; then
-  # flac2mp3_prelogmessage is set above
-  echo "$flac2mp3_prelogmessage" | log
-  echo "$flac2mp3_prelogmessage" >&2
-fi
-
 # Log Debug state
 if [ $flac2mp3_debug -ge 1 ]; then
   flac2mp3_message="Debug|Enabling debug logging level ${flac2mp3_debug}. Starting ${lidarr_eventtype^} run."
   echo "$flac2mp3_message" | log
-  echo "$flac2mp3_message" >&2
+  echo "$flac2mp3_message"
+fi
+
+# Log FLAC2MP3_ARGS usage
+if [ -n "$flac2mp3_prelogmessage" ]; then
+  # flac2mp3_prelogmessage is set above
+  echo "$flac2mp3_prelogmessage" | log
+  [ $flac2mp3_debug -ge 1 ] && echo "Debug|FLAC2MP3_ARGS: ${FLAC2MP3_ARGS}" | log
 fi
 
 # Log environment
@@ -435,7 +433,7 @@ elif [ -f "$flac2mp3_config" ]; then
   flac2mp3_recyclebin="$(echo $flac2mp3_result | jq -crM .recycleBin)"
   [ $flac2mp3_debug -ge 1 ] && echo "Debug|Detected Lidarr RecycleBin '$flac2mp3_recyclebin'" | log
 else
-  # No config file means we can't call the API.  Best effort at this point.
+  # No config file means we can't call the API. Best effort at this point.
   flac2mp3_message="Warn|Unable to locate Lidarr config file: '$flac2mp3_config'"
   echo "$flac2mp3_message" | log
   echo "$flac2mp3_message" >&2
@@ -446,7 +444,7 @@ if [[ "$lidarr_eventtype" = "Test" ]]; then
   echo "Info|Lidarr event: $lidarr_eventtype" | log
   flac2mp3_message="Info|Script was test executed successfully."
   echo "$flac2mp3_message" | log
-  echo "$flac2mp3_message" >&2
+  echo "$flac2mp3_message"
   exit 0
 fi
 
@@ -458,12 +456,20 @@ if [ "$flac2mp3_type" = "batch" -a ! -f "$flac2mp3_tracks" ]; then
   exit 5
 fi
 
+# Check for empty track variable
+if [ -z "$flac2mp3_tracks" ]; then
+  flac2mp3_message="Error|No audio tracks were detected or specified!"
+  echo "$flac2mp3_message" | log
+  echo "$flac2mp3_message" >&2
+  exit 1
+fi
+
 # If specified, check if destination folder exists and create if necessary
 if [ "$flac2mp3_output" -a ! -d "$flac2mp3_output" ]; then
-  [ $flac2mp3_debug -ge 1 ] && echo "Debug|Destination directory does not exist.  Creating: $flac2mp3_output" | log
+  [ $flac2mp3_debug -ge 1 ] && echo "Debug|Destination directory does not exist. Creating: $flac2mp3_output" | log
   mkdir -p "$flac2mp3_output"
   flac2mp3_return=$?; [ "$flac2mp3_return" != 0 ] && {
-    flac2mp3_message="Error|[$flac2mp3_return] mkdir returned an error.  Unable to create output directory."
+    flac2mp3_message="Error|[$flac2mp3_return] mkdir returned an error. Unable to create output directory."
     echo "$flac2mp3_message" | log
     echo "$flac2mp3_message" >&2
     exit 6
@@ -502,7 +508,7 @@ echo -n "$flac2mp3_tracks" | awk -v Debug=$flac2mp3_debug \
 -v Bitrate="$flac2mp3_bitrate" \
 -v VBR="$flac2mp3_vbrquality" \
 -v FFmpegADV="$flac2mp3_ffmpegadv" \
--v EXT="$flac2mp3_extension" \
+-v Ext="$flac2mp3_extension" \
 -v Output="$flac2mp3_output" \
 -v Keep="$flac2mp3_keep" \
 -v Pat="$flac2mp3_regex" '
@@ -511,8 +517,9 @@ BEGIN {
   FS = "|"
   RS = "|"
   IGNORECASE = 1
-  if (EXT == "") EXT = ".mp3"
-  if (Pat == "") Pat = "\.flac$"
+  # Set default extension, pattern, and logging values
+  if (Ext == "") Ext = ".mp3"
+  if (Pat == "") Pat = "\\.flac$"
   if (Debug == 0) FFmpegLOG = "error"
   else if (Debug == 1) FFmpegLOG = "warning"
   else if (Debug >= 2) FFmpegLOG = "info"
@@ -523,21 +530,30 @@ BEGIN {
     if (Debug >= 1) print "Debug|Using variable quality of "VBR
     BrCommand = "-q:a "VBR
   } else if (FFmpegADV) {
-    if (Debug >= 1) print "Debug|Using advanced ffmpeg options: \""FFmpegADV"\""
-    if (Debug >= 1) print "Debug|Exporting with file extension "EXT
+    if (Debug >= 1) print "Debug|Using advanced ffmpeg options \""FFmpegADV"\""
+    if (Debug >= 1) print "Debug|Exporting with file extension \""Ext"\""
+    FFmpegOPTS = FFmpegADV
   }
+  if (Debug >= 1) print "Debug|Matching tracks against regex \""Pat"\""
+  # Set default ffmpeg options
+  if (FFmpegOPTS == "") FFmpegOPTS = "-c:v copy -map 0 -y -acodec libmp3lame "BrCommand" -write_id3v1 1 -id3v2_version 3"
 }
-$1 ~ Pat {
-  # Get each FLAC (or other) file name and create a new MP3 (or other) name
-  Track = $1
-  Last = split($1, Parts, ".")
-  NewTrack = substr(Track, 1, length(Track) - length(Parts[Last]) - 1) EXT
+$0 !~ Pat {
+  if (Debug >= 1) print "Debug|Skipping track that did not match regex: "$0
+}
+$0 ~ Pat {
+  # Get each audio file name and create a new track name with the given extension
+  Track = $0
+  Last = split(Track, Parts, ".")
+  NewTrack = substr(Track, 1, length(Track) - length(Parts[Last]) - 1) Ext
   # Redirect output if asked
-  if (Output) sub(/^.*\//,Output , NewTrack)
+  if (Output) sub(/^.*\//, Output, NewTrack)
+  # Check for same track name
+  if (Track == NewTrack) {
+    print "Error|The original track name and new name are the same! Skipping track: "Track
+    next
+  }
   print "Info|Writing: "NewTrack
-  # Check for advanced options
-  if (FFmpegADV) FFmpegOPTS = FFmpegADV
-  else FFmpegOPTS = "-c:v copy -map 0 -y -acodec libmp3lame "BrCommand" -write_id3v1 1 -id3v2_version 3"
   # Convert the track
   if (Debug >= 1) print "Debug|Executing: nice "FFmpeg" -loglevel "FFmpegLOG" -nostdin -i \""Track"\" "FFmpegOPTS" \""NewTrack"\""
   Result = system("nice "FFmpeg" -loglevel "FFmpegLOG" -nostdin -i \""Track"\" "FFmpegOPTS" \""NewTrack"\" 2>&1")
@@ -545,6 +561,7 @@ $1 ~ Pat {
   if (Result) {
     print "Error|Exit code "Result" converting \""Track"\""
   } else {
+    # Build system command to set owner and permissions, etc.
     if (Keep == 1) {
       # Do not delete the source file
       if (Debug >= 1) print "Debug|Keeping original: \""Track"\" and setting permissions on \""NewTrack"\""
@@ -564,6 +581,7 @@ $1 ~ Pat {
         Command = "if [ ! -e \""RecPath"\" ]; then mkdir -p \""RecPath"\"; fi; if [ -s \""NewTrack"\" ]; then if [ -f \""Track"\" ]; then chown --reference=\""Track"\" \""NewTrack"\"; chmod --reference=\""Track"\" \""NewTrack"\"; mv -t \""RecPath"\" \""Track"\"; fi; fi"
       }
     }
+    # Set owner, permissions, etc.
     if (Debug >= 2) print "Debug|Executing: "Command
     system(Command)
   }
@@ -575,7 +593,7 @@ $1 ~ Pat {
 flac2mp3_return="${PIPESTATUS[1]}"    # captures awk exit status
 [ $flac2mp3_debug -ge 2 ] && echo "Debug|awk exited with code: $flac2mp3_return" | log
 if [ "$flac2mp3_return" != 0 ]; then
-  flac2mp3_message="Error|[$flac2mp3_return] Script exited abnormally.  File permissions issue?"
+  flac2mp3_message="Error|[$flac2mp3_return] Script exited abnormally. File permissions issue?"
   echo "$flac2mp3_message" | log
   echo "$flac2mp3_message" >&2
   exit 10

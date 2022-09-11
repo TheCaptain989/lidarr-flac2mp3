@@ -20,7 +20,7 @@ Production Container info: ![Docker Image Size](https://img.shields.io/docker/im
 2. Configure the Docker container with all the port, volume, and environment settings from the *original container documentation* here:  
   **[linuxserver/lidarr](https://hub.docker.com/r/linuxserver/lidarr "Docker container")**
    1. Add a **DOCKER_MODS** environment variable to the `docker run` command, as follows:  
-      - Dev/test release: `-e DOCKER_MODS=thecaptain989/lidarr-flac2mp3:latest`  
+      - Dev/test release: `-e DOCKER_MODS=thecaptain989/lidarr-flac2mp3:latest`
       - Stable release: `-e DOCKER_MODS=linuxserver/mods:lidarr-flac2mp3`
 
       *Example Docker CLI Configuration*  
@@ -63,7 +63,7 @@ By default, if you've configured Lidarr's **Recycle Bin** path correctly, the or
 ### Syntax
 >**Note:** The _Arguments_ field for Custom Scripts was removed in Lidarr release [v0.7.0.1347](https://github.com/lidarr/Lidarr/commit/b9d240924f8965ebb2c5e307e36b810ae076101e "Lidarr commit notes") due to security concerns.
 
-To supply arguments to the script, you **must** either use one of the [included wrapper scripts](./README.md#included-wrapper-scripts), create a [custom wrapper script](./README.md#example-wrapper-script), or set the `FLAC2MP3_ARGS` [environment variable](./README.md#environment-variable).
+To supply arguments to the script, you **must** either use one of the **[included wrapper scripts](./README.md#included-wrapper-scripts)**, create a **[custom wrapper script](./README.md#example-wrapper-script)**, or set the `FLAC2MP3_ARGS` **[environment variable](./README.md#environment-variable)**.
 
 #### Command Line Options and Arguments
 The script may be called with optional command line arguments.
@@ -78,12 +78,12 @@ Option|Argument|Description
 -d, --debug|\[\<level\>\]|Enables debug logging. Level is optional.<br/>Default of 1 (low).<br/>2 includes API and FFmpeg output.
 -b, --bitrate|\<bitrate\>|Sets the output quality in constant bits per second (CBR).<br/>Examples: 160k, 240k, 300000<br/>**Note:** May not be specified with `-v`, `-a`, or `-e`.
 -v, --quality|\<quality\>|Sets the output variable bit rate (VBR).<br/>Specify a value between 0 and 9, with 0 being the highest quality.<br/>See the [FFmpeg MP3 Encoding Guide](https://trac.ffmpeg.org/wiki/Encode/MP3) for more details.<br/>**Note:** May not be specified with `-b`, `-a`, or `-e`.
--a, --advanced|\"\<options\>\"|Advanced ffmpeg options.<br/>The specified `options` replace all script defaults and are sent directly to ffmpeg.<br/>The `options` value must be enclosed in quotes.<br/>See [FFmpeg Options](https://ffmpeg.org/ffmpeg.html#Options) for details on valid options, and [Guidelines for high quality audio encoding](https://trac.ffmpeg.org/wiki/Encode/HighQualityAudio) for suggested usage.<br/>**Note:** Requires the `-e` option to also be specified. May not be specified with `-v` or `-b`.<br/>![danger] **WARNING:** You must specify an audio codec (by including a `-c:a <codec>` ffmpeg option) or the resulting file will contain no audio!<br/>![danger] **WARNING:** Invalid `options` could result in script failure!
+-a, --advanced|\"\<options\>\"|Advanced ffmpeg options.<br/>The specified `options` replace all script defaults and are sent directly to ffmpeg.<br/>The `options` value must be enclosed in quotes.<br/>See [FFmpeg Options](https://ffmpeg.org/ffmpeg.html#Options) for details on valid options, and [Guidelines for high quality audio encoding](https://trac.ffmpeg.org/wiki/Encode/HighQualityAudio) for suggested usage.<br/>**Note:** Requires the `-e` option to also be specified. May not be specified with `-v` or `-b`.<br/>![warning] **WARNING:** You must specify an audio codec (by including a `-c:a <codec>` ffmpeg option) or the resulting file will contain no audio!<br/>![warning] **WARNING:** Invalid `options` could result in script failure!
 -e, --extension|\<extension\>|Sets the output file extension.<br/>The extension may be prefixed by a dot (".") or not.<br/>Example: .ogg<br/>**Note:** Requires the `-a` option to also be specified. May not be specified with `-v` or `-b`.
--f, --file|<audio_file>|If included, the script enters **[Batch Mode](./README.md#batch-mode)** and converts the specified audio file.<br/>![danger] **WARNING:** Do not use this argument when called from Lidarr!
+-f, --file|<audio_file>|If included, the script enters **[Batch Mode](./README.md#batch-mode)** and converts the specified audio file.<br/>![warning] **WARNING:** Do not use this argument when called from Lidarr!
 -o, --output|\<directory\>|Converted audio file(s) are saved to `directory` instead of being located in the same directory as the source audio file.<br/>The path will be created if it does not exist.
 -k, --keep-file| |Do not delete the source file or move it to the Lidarr Recycle bin.<br/>**Note:** This also disables triggering a Lidarr rescan after conversion.
--r, --regex|'\<regex\>'|Sets the regular expression used to select input files.<br/>The `regex` value should be enclosed in single quotes.<br/>Defaults to `'\.flac$'`.
+-r, --regex|'\<regex\>'|Sets the regular expression used to select input files.<br/>The `regex` value should be enclosed in single quotes and escaped properly.<br/>Defaults to `"\.flac$"`.
 --help| |Display help and exit.
 --version| |Display version and exit.
 
@@ -94,15 +94,29 @@ The `-a` option effectively makes the script a generic wrapper for ffmpeg.  FFmp
 
 The exact format of the executed ffmpeg command is:
 ```
-ffmpeg -loglevel error -i "input.flac" ${options} "output.${extension}"
+ffmpeg -loglevel error -nostdin -i "input.flac" ${options} "output.${extension}"
 ```
+
+#### Technical notes on regex
+By default, the script only matches and interacts with FLAC files (specifically, files ending in ".flac"). The `-r` option allows the script to match on a user specified regular expression (i.e. "regex") pattern. 
+
+Note that files are passed to the script with the full Linux path intact. (Ex: `/path/to/audio/a-ha/Hunting High and Low/01 Take on Me.mp3`).  Craft your regex with this in mind.
+
+![warning] **Note:** Escaping special regex characters (like a dot `.`) requires a double backslash, _even when single quoted!_ This is because **awk** (the program that processes audio files in the script) in most cases [strips a single backslash](https://www.gnu.org/software/gawk/manual/html_node/Escape-Sequences.html "GNU awk reference") from strings. Double quoted or unquoted strings require _four_ backslashes to preserve a regex escape because the bash shell will process the escapes first.
+
+For example, to convert all audio files to AAC audio files, use the following options:  
+```
+-a "-y -map 0 -c:a aac -b:a 240k -c:v copy" -e m4a --regex '\\.[^.]*$'
+```
+
+Regular expression syntax is beyond the scope of this document.  See this [tutorial](https://www.regular-expressions.info/tutorial.html "Regular Expressions Tutorial") for more information. Regex patterns may be tested [here](http://regexstorm.net/tester "regex tester").
 
 ### Examples
 ```
 -b 320k        # Output 320 kbit/s MP3 (non-VBR; same as default behavior)
 -v 0           # Output variable bitrate MP3, VBR 220-260 kbit/s
 -d -b 160k     # Enable debugging level 1, and output a 160 kbit/s MP3
--r '\.[^.]*$'  # Convert any file to MP3 (not just FLAC)
+-r '\\.[^.]*$' # Convert any file to MP3 (not just FLAC)
 -a "-c:v libtheora -map 0 -q:v 10 -c:a libopus -b:a 192k" -e .opus
                # Convert to Opus format, VBR 192 kbit/s, cover art, no overwright
 -a "-vn -c:a libopus -b:a 192K" -e .opus -r '\.mp3$'
@@ -149,19 +163,20 @@ The `flac2mp3.sh` script also allows the use of arguments provided by the `FLAC2
 
 For example, the following value would convert any .mp3 to Opus:
 ```
-FLAC2MP3_ARGS=-a "-vn -c:a libopus -b:a 192k" -e .opus -r '\.mp3$'
+-e FLAC2MP3_ARGS='-a "-vn -c:a libopus -b:a 192k" -e .opus -r "\\.mp3$"'
 ```
 
-Make sure to correctly escape special characters when using this method. In Docker Compose, the previous command would need an extra `$`:
+Make sure to correctly use quotes and/or escape special characters when using this method. (See [regex notes](./README.md#technical-notes-on-regex) above.)  
+In Docker Compose, the previous command would need an extra `$` to match the end-of-line:
 ```yaml
 environment:
-  - FLAC2MP3_ARGS=-a "-vn -c:a libopus -b:a 192k" -e .opus -r '\.mp3$$'
+  - FLAC2MP3_ARGS=-a "-vn -c:a libopus -b:a 192k" -e .opus -r '\\.mp3$$'
 ```
-
->**Note:** The environment variable settings are _only_ used when **no** command line arguments are present. **Any** command line argument will disable the use of the environment variable.
 
 *Example Synology Configuration*  
 ![flac2mp3](.assets/lidarr-synology-2.png "Synology container settings")
+
+>**Note:** The environment variable settings are _only_ used when **no** command line arguments are present. **Any** command line argument will disable the use of the environment variable.
 
 ### Triggers
 The only events/notification triggers that are supported are **On Release Import** and **On Upgrade**
