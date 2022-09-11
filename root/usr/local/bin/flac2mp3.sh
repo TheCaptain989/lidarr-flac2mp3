@@ -117,13 +117,16 @@ Examples:
   echo "$usage" >&2
 }
 
-# Check for environment vairable arguments
+# Check for environment variable arguments
 if [ -n "$FLAC2MP3_ARGS" ]; then
-  if [ -z "$#" ]; then
-    echo "Warning|FLAC2MP3_ARGS environment variable set but will be ignored because command line arguments were also specified." >&2
+  if [ $# -ne 0 ]; then
+    flac2mp3_prelogmessage="Warning|FLAC2MP3_ARGS environment variable set but will be ignored because command line arguments were also specified."
+    echo "Other ARGS: '$@'"
   else
     # Move the environment variable arguments to the command line
+    flac2mp3_prelogmessage="Info|Using settings in FLAC2MP3_ARGS"
     eval set -- "$FLAC2MP3_ARGS"
+    echo "Env ARGS: '$@'"
   fi
 fi
 
@@ -250,7 +253,6 @@ while (( "$#" )); do
         usage
         exit 3
       fi
-      shift
       ;;
     -*|--*=) # Unknown option
       echo "Error|Unknown option: $1" >&2
@@ -363,6 +365,13 @@ if [ ! -f "/usr/bin/ffmpeg" ]; then
   echo "$flac2mp3_message" | log
   echo "$flac2mp3_message" >&2
   exit 2
+fi
+
+# Log FLAC2MP3_ARGS usage
+if [ -n "$flac2mp3_prelogmessage" ]; then
+  # flac2mp3_prelogmessage is set above
+  echo "$flac2mp3_prelogmessage" | log
+  echo "$flac2mp3_prelogmessage" >&2
 fi
 
 # Log Debug state
