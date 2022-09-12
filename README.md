@@ -52,10 +52,10 @@ Production Container info: ![Docker Image Size](https://img.shields.io/docker/im
 
    This will use the defaults to create a 320Kbps MP3 file.
 
-   *For any other setting, you **must** either use one of the supported methods to pass arguments to the script.  See the [Syntax](./README.md#syntax) section below.*
+   *For any other setting, you **must** use one of the supported methods to pass arguments to the script.  See the [Syntax](./README.md#syntax) section below.*
 
 ## Usage
-New file(s) with will be placed in the same directory as the original FLAC file(s) (unless redirected with the `--output` option below) and have the same owner and permissions. Existing files with the same track name will be overwritten.
+New file(s) will be placed in the same directory as the original FLAC file(s) (unless redirected with the `--output` option below) and have the same owner and permissions. Existing files with the same track name will be overwritten.
 
 By default, if you've configured Lidarr's **Recycle Bin** path correctly, the original audio file will be moved there.  
 ![danger] **NOTE:** If you have *not* configured the Recycle Bin, the original FLAC audio file(s) will be deleted and permanently lost.  This behavior may be modifed with the `--keep-file` option.
@@ -100,9 +100,9 @@ ffmpeg -loglevel error -nostdin -i "input.flac" ${options} "output.${extension}"
 #### Technical notes on regex
 By default, the script only matches and interacts with FLAC files (specifically, files ending in ".flac"). The `-r` option allows the script to match on a user specified regular expression (i.e. "regex") pattern. 
 
-Note that files are passed to the script with the full Linux path intact. (Ex: `/path/to/audio/a-ha/Hunting High and Low/01 Take on Me.mp3`).  Craft your regex with this in mind.
+Files are passed to the script with the full Linux path intact. (Ex: `/path/to/audio/a-ha/Hunting High and Low/01 Take on Me.mp3`).  Craft your regex with this in mind.
 
-![warning] **Note:** Escaping special regex characters (like a dot `.`) requires a double backslash, _even when single quoted!_ This is because **awk** (the program that processes audio files in the script) in most cases [strips a single backslash](https://www.gnu.org/software/gawk/manual/html_node/Escape-Sequences.html "GNU awk reference") from strings. Double quoted or unquoted strings require _four_ backslashes to preserve a regex escape because the bash shell will process the escapes first.
+![warning] **NOTE:** Escaping special regex characters (like a dot `.`) requires a double backslash, _even when single quoted!_ This is because **awk** (the program that processes audio files in the script) in most cases [strips a single backslash](https://www.gnu.org/software/gawk/manual/html_node/Escape-Sequences.html "GNU awk reference") from strings. Double quoted or unquoted strings require _four_ backslashes to preserve a regex escape because the bash shell will process the escapes first.
 
 For example, to convert all audio files to AAC audio files, use the following options:  
 ```
@@ -176,7 +176,7 @@ environment:
 *Example Synology Configuration*  
 ![flac2mp3](.assets/lidarr-synology-2.png "Synology container settings")
 
->**Note:** The environment variable settings are _only_ used when **no** command line arguments are present. **Any** command line argument will disable the use of the environment variable.
+>**NOTE:** The environment variable settings are _only_ used when **no** command line arguments are present. **Any** command line argument will disable the use of the environment variable.
 
 ### Triggers
 The only events/notification triggers that are supported are **On Release Import** and **On Upgrade**
