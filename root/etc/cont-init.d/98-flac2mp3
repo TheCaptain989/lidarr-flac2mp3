@@ -8,7 +8,7 @@ Repos:
   Prod: https://github.com/linuxserver/docker-mods/tree/lidarr-flac2mp3
 
 Version: {{VERSION}}
-$([ $FLAC2MP3_ARGS ] && echo "Environment arguments set: $FLAC2MP3_ARGS")
+$([ -n "$FLAC2MP3_ARGS" ] && echo "Environment arguments set: $FLAC2MP3_ARGS")
 ----------------
 EOF
 
