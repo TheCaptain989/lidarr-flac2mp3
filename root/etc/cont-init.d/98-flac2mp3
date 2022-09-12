@@ -8,9 +8,8 @@ Repos:
   Prod: https://github.com/linuxserver/docker-mods/tree/lidarr-flac2mp3
 
 Version: {{VERSION}}
+----------------
 EOF
-[ -n "$FLAC2MP3_ARGS" ] && echo "Environment arguments set: $FLAC2MP3_ARGS"
-echo "----------------"
 
 # Determine if setup is needed
 if [ ! -f /usr/bin/ffmpeg ]; then
