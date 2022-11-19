@@ -58,7 +58,7 @@ Production Container info: ![Docker Image Size](https://img.shields.io/docker/im
 New file(s) will be placed in the same directory as the original FLAC file(s) (unless redirected with the `--output` option below) and have the same owner and permissions. Existing files with the same track name will be overwritten.
 
 By default, if you've configured Lidarr's **Recycle Bin** path correctly, the original audio file will be moved there.  
-![danger] **NOTE:** If you have *not* configured the Recycle Bin, the original FLAC audio file(s) will be deleted and permanently lost.  This behavior may be modifed with the `--keep-file` option.
+![danger] **NOTE:** If you have *not* configured the Recycle Bin, the original FLAC audio file(s) will be deleted and permanently lost.  This behavior may be modified with the `--keep-file` option.
 
 ### Syntax
 >**Note:** The _Arguments_ field for Custom Scripts was removed in Lidarr release [v0.7.0.1347](https://github.com/lidarr/Lidarr/commit/b9d240924f8965ebb2c5e307e36b810ae076101e "Lidarr commit notes") due to security concerns.
@@ -69,7 +69,7 @@ To supply arguments to the script, you **must** either use one of the **[include
 The script may be called with optional command line arguments.
 
 The syntax for the command line is:  
-`flac2mp3 [{-d|--debug}] [{-b|--bitrate} <bitrate> | {-v|--quality} <quality> | {-a|--advanced} "<options>" {-e|--extension} <extension>] [{-f|--file} <audio_file>] [{-k|--keepfile}] [{-o|--output} <directory>] [{-r|--regex} '<regex>']`  
+`flac2mp3 [{-d|--debug} [<level>]] [{-b|--bitrate} <bitrate> | {-v|--quality} <quality> | {-a|--advanced} "<options>" {-e|--extension} <extension>] [{-f|--file} <audio_file>] [{-k|--keepfile}] [{-o|--output} <directory>] [{-r|--regex} '<regex>'] [{-t|--tags} <taglist>]`  
 
 Where:
 
@@ -84,6 +84,7 @@ Option|Argument|Description
 -o, --output|\<directory\>|Converted audio file(s) are saved to `directory` instead of being located in the same directory as the source audio file.<br/>The path will be created if it does not exist.
 -k, --keep-file| |Do not delete the source file or move it to the Lidarr Recycle bin.<br/>**Note:** This also disables triggering a Lidarr rescan after conversion.
 -r, --regex|'\<regex\>'|Sets the regular expression used to select input files.<br/>The `regex` value should be enclosed in single quotes and escaped properly.<br/>Defaults to `"\.flac$"`.
+-t, --tags|\'<taglist\'>|Comma separated list of metadata tags to apply automated corrections to.<br/>See [Metadata Corrections](./README.md#metadata-corrections) section.
 --help| |Display help and exit.
 --version| |Display version and exit.
 
@@ -118,16 +119,16 @@ Regular expression syntax is beyond the scope of this document.  See this [tutor
 -d -b 160k     # Enable debugging level 1, and output a 160 kbit/s MP3
 -r '\\.[^.]*$' # Convert any file to MP3 (not just FLAC)
 -a "-c:v libtheora -map 0 -q:v 10 -c:a libopus -b:a 192k" -e .opus
-               # Convert to Opus format, VBR 192 kbit/s, cover art, no overwright
+               # Convert to Opus format, 192 kbit/s, cover art
 -a "-vn -c:a libopus -b:a 192K" -e .opus -r '\.mp3$'
-               # Convert .mp3 files to Opus format.
+               # Convert .mp3 files to Opus format, 192 kbit/s, no cover art
 -a "-y -map 0 -c:a aac -b:a 240k -c:v copy" -e mp4
                # Convert to MP4 format, using AAC 240 kbit/s audio, cover art, overwrite file
 --file "/path/to/audio/a-ha/Hunting High and Low/01 Take on Me.flac"
                # Batch Mode
                # Output 320kbit/s MP3
 -o "/path/to/audio" -k
-               # Place the converted file(s) in the specified directory and do not delete the original audio file(s).
+               # Place the converted file(s) in the specified directory and do not delete the original audio file(s)
 ```
 
 #### Included Wrapper Scripts
@@ -207,6 +208,20 @@ This log can be downloaded from Lidarr under *System* > *Log Files*
 
 Log rotation is performed, with 5 log files of 1MB each kept, matching Lidarr's log retention.
 >![danger] **NOTE:** If debug logging is enabled with a level above 1, the log file can grow very large very quickly and is much more likely to be rotated.  *Do not leave high-level debug logging enabled permanently.*
+
+#### Metadata Corrections
+This feature is not meant for general purpose use. It is only documented for completeness.
+
+List of supported tags and metadata corrections that are applied:
+
+|Tag|Original|Correction
+|---|---|---
+|disc|1|1/1
+|genre|/Electronic/|"Electronica & Dance"
+| |/Indie/|"Alternative & Indie"
+| |/Pop/|"Pop"
+| |/Punk\|Alternative/|"Alternative & Punk"
+| |/Rock/|"Rock"
 
 ## Credits
 This would not be possible without the following:
