@@ -621,9 +621,10 @@ $0 ~ Pat {
         sub(/\n/, "", Genre)   # I do not yet know why this is needed
         if (Debug >= 1) print "Debug|Discovered genre: "Genre
         if (Genre ~ /;/) {
-          if (Genre ~ /Electronic/) Metadata = "-metadata genre=\"Electronica & Dance\" "Metadata
+          if (Genre ~ /Pop/) Metadata = "-metadata genre=\"Pop\" "Metadata
           else if (Genre ~ /Indie/) Metadata = "-metadata genre=\"Alternative & Indie\" "Metadata
-          else if (Genre ~ /Pop/) Metadata = "-metadata genre=\"Pop\" "Metadata
+          else if (Genre ~ /Industrial/) Metadata = "-metadata genre=\"Industrial Rock\" "Metadata
+          else if (Genre ~ /Electronic/) Metadata = "-metadata genre=\"Electronica & Dance\" "Metadata
           else if (Genre ~ /Punk|Alternative/) Metadata = "-metadata genre=\"Alternative & Punk\" "Metadata
           else if (Genre ~ /Rock/) Metadata = "-metadata genre=\"Rock\" "Metadata
         }
