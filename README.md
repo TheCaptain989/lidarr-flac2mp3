@@ -84,7 +84,7 @@ Option|Argument|Description
 -o, --output|\<directory\>|Converted audio file(s) are saved to `directory` instead of being located in the same directory as the source audio file.<br/>The path will be created if it does not exist.
 -k, --keep-file| |Do not delete the source file or move it to the Lidarr Recycle bin.<br/>**Note:** This also disables triggering a Lidarr rescan after conversion.
 -r, --regex|'\<regex\>'|Sets the regular expression used to select input files.<br/>The `regex` value should be enclosed in single quotes and escaped properly.<br/>Defaults to `"\.flac$"`.
--t, --tags|\'<taglist\'>|Comma separated list of metadata tags to apply automated corrections to.<br/>See [Metadata Corrections](./README.md#metadata-corrections) section.
+-t, --tags|\<taglist\>|Comma separated list of metadata tags to apply automated corrections to.<br/>See [Metadata Corrections](./README.md#metadata-corrections) section.
 --help| |Display help and exit.
 --version| |Display version and exit.
 
@@ -217,9 +217,10 @@ List of supported tags and metadata corrections that are applied:
 |Tag|Original|Correction
 |---|---|---
 |disc|1|1/1
-|genre|/Electronic/|"Electronica & Dance"
+|genre|/Pop/|"Pop"
 | |/Indie/|"Alternative & Indie"
-| |/Pop/|"Pop"
+| |/Industrial/|"Industrial Rock"
+| |/Electronic/|"Electronica & Dance"
 | |/Punk\|Alternative/|"Alternative & Punk"
 | |/Rock/|"Rock"
 
