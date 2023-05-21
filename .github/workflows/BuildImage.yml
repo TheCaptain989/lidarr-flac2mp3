@@ -30,7 +30,7 @@ jobs:
       MOD_VERSION: ${{ steps.outputs.outputs.MOD_VERSION }}
 
   build:
-    #uses: linuxserver/github-workflows/.github/workflows/docker-mod-builder.yml@v1
+    uses: actions/checkout@v2.3.3
     needs: set-vars
     secrets:
       CR_USER: ${{ secrets.CR_USER }}
