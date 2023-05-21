@@ -3,10 +3,10 @@ name: Build Image
 on: [push, pull_request_target, workflow_dispatch]
 
 env:
-  GITHUB_REPO: "thecaptain989/lidarr-flac2mp3"
-  ENDPOINT: "thecaptain989/lidarr-flac2mp3"
-  BASEIMAGE: "lidarr"
-  MODNAME: "flac2mp3"
+  GITHUB_REPO: "thecaptain989/lidarr-flac2mp3" #don't modify
+  ENDPOINT: "thecaptain989/lidarr-flac2mp3" #don't modify
+  BASEIMAGE: "lidarr" #replace
+  MODNAME: "flac2mp3" #replace
 
 jobs:
   set-vars:
@@ -30,38 +30,16 @@ jobs:
       MOD_VERSION: ${{ steps.outputs.outputs.MOD_VERSION }}
 
   build:
+    uses: linuxserver/github-workflows/.github/workflows/docker-mod-builder.yml@v1
     needs: set-vars
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Build image
-        run: |
-          docker buildx build --no-cache --build-arg MOD_VERSION=${MOD_VERSION} --tag ${ENDPOINT}:${{ github.sha }} .
-
-      - name: Tag image
-        run: |
-          docker tag ${ENDPOINT}:${{ github.sha }} ${ENDPOINT}:latest
-
-      - name: Credential check
-        run: |
-          echo "CR_USER=${{ secrets.CR_USER }}" >> $GITHUB_ENV
-          echo "CR_PAT=${{ secrets.CR_PAT }}" >> $GITHUB_ENV
-          echo "DOCKERUSER=${{ secrets.DOCKERUSER }}" >> $GITHUB_ENV
-          echo "DOCKERPASS=${{ secrets.DOCKERPASS }}" >> $GITHUB_ENV
-          if [[ "${{ secrets.CR_USER }}" == "" && "${{ secrets.CR_PAT }}" == "" && "${{ secrets.DOCKERUSER }}" == "" && "${{ secrets.DOCKERPASS }}" == "" ]]; then
-            echo "::error::Push credential secrets missing."
-            echo "::error::You must set either CR_USER & CR_PAT or DOCKERUSER & DOCKERPASS as secrets in your repo settings."
-            echo "::error::See https://github.com/linuxserver/docker-mods/blob/master/README.md for more information/instructions."
-            exit 1
-          fi
-
-      - name: Login to DockerHub
-        if: ${{ env.DOCKERUSER != '' && env.DOCKERPASS != '' }}
-        run: |
-          echo "${{ secrets.DOCKERPASS }}" | docker login -u "${{ secrets.DOCKERUSER }}" --password-stdin
-
-      - name: Push tags to DockerHub
-        if: ${{ env.DOCKERUSER != '' && env.DOCKERPASS != '' }}
-        run: |
-          docker push ${ENDPOINT}:${{ github.sha }}
-          docker push ${ENDPOINT}:latest
+    secrets:
+      CR_USER: ${{ secrets.CR_USER }}
+      CR_PAT: ${{ secrets.CR_PAT }}
+      DOCKERUSER: ${{ secrets.DOCKERUSER }}
+      DOCKERPASS: ${{ secrets.DOCKERPASS }}
+    with:
+      GITHUB_REPO: ${{ needs.set-vars.outputs.GITHUB_REPO }}
+      ENDPOINT: ${{ needs.set-vars.outputs.ENDPOINT }}
+      BASEIMAGE: ${{ needs.set-vars.outputs.BASEIMAGE }}
+      MODNAME: ${{ needs.set-vars.outputs.MODNAME }}
+      MOD_VERSION: ${{ needs.set-vars.outputs.MOD_VERSION }}
