@@ -13,7 +13,8 @@ jobs:
 
       - name: Set Vars
         run: |
-          echo "ENDPOINT=${{ env.ENDPOINT }}" >> $GITHUB_STEP_SUMMARY
+          echo "ENDPOINT=${ENDPOINT}" >> $GITHUB_ENV
+          echo "ENDPOINT=${ENDPOINT}" >> $GITHUB_STEP_SUMMARY
           # **** If the mod needs to be versioned, set the versioning logic below. Otherwise leave as is. ****
           MOD_VERSION=${GITHUB_SHA:0:7}
           echo "MOD_VERSION=${MOD_VERSION}" >> $GITHUB_ENV
