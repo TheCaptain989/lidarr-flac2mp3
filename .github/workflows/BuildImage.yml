@@ -32,11 +32,6 @@ jobs:
   build:
     needs: set-vars
     runs-on: ubuntu-latest
-    secrets:
-      CR_USER: ${{ secrets.CR_USER }}
-      CR_PAT: ${{ secrets.CR_PAT }}
-      DOCKERUSER: ${{ secrets.DOCKERUSER }}
-      DOCKERPASS: ${{ secrets.DOCKERPASS }}
     steps:
       - uses: actions/checkout@v2.3.3
       - name: Build image
