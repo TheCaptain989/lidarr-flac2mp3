@@ -13,7 +13,6 @@ jobs:
 
       - name: Set Vars
         run: |
-          echo "ENDPOINT=${ENDPOINT}" >> $GITHUB_ENV
           echo "ENDPOINT=${ENDPOINT}" >> $GITHUB_STEP_SUMMARY
           # **** If the mod needs to be versioned, set the versioning logic below. Otherwise leave as is. ****
           MOD_VERSION=${GITHUB_SHA:0:7}
@@ -22,7 +21,7 @@ jobs:
 
       - name: Build image
         run: |
-          docker buildx build --no-cache --build-arg MOD_VERSION=${MOD_VERSION} -t ${{ github.sha }} .
+          docker buildx build --no-cache --build-arg MOD_VERSION=${MOD_VERSION} --tag ${ENDPOINT}:${{ github.sha }} .
 
       - name: Tag image
         run: |
