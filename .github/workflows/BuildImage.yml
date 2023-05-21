@@ -31,11 +31,18 @@ jobs:
 
   build:
     needs: set-vars
+    runs-on: ubuntu-latest
     secrets:
       CR_USER: ${{ secrets.CR_USER }}
       CR_PAT: ${{ secrets.CR_PAT }}
       DOCKERUSER: ${{ secrets.DOCKERUSER }}
       DOCKERPASS: ${{ secrets.DOCKERPASS }}
+    with:
+      GITHUB_REPO: ${{ needs.set-vars.outputs.GITHUB_REPO }}
+      ENDPOINT: ${{ needs.set-vars.outputs.ENDPOINT }}
+      BASEIMAGE: ${{ needs.set-vars.outputs.BASEIMAGE }}
+      MODNAME: ${{ needs.set-vars.outputs.MODNAME }}
+      MOD_VERSION: ${{ needs.set-vars.outputs.MOD_VERSION }}
     steps:
       - uses: actions/checkout@v2.3.3
       - name: Build image
