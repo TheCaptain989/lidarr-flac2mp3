@@ -30,7 +30,6 @@ jobs:
       MOD_VERSION: ${{ steps.outputs.outputs.MOD_VERSION }}
 
   build:
-    uses: actions/checkout@v2.3.3
     needs: set-vars
     secrets:
       CR_USER: ${{ secrets.CR_USER }}
@@ -45,6 +44,7 @@ jobs:
       MOD_VERSION: ${{ needs.set-vars.outputs.MOD_VERSION }}
 
     steps:
+      - uses: actions/checkout@v2.3.3
       - name: Build image
         run: |
           docker buildx build --no-cache --build-arg MOD_VERSION=${MOD_VERSION} --tag ${ENDPOINT}:${{ github.sha }} .
