@@ -8,10 +8,10 @@ A [Batch Mode](./README.md#batch-mode) is also supported that allows usage outsi
 
 >**NOTE:** This mod supports Linux OSes only.
 
+Production Container info: ![Docker Image Size](https://img.shields.io/docker/image-size/linuxserver/mods/lidarr-flac2mp3 "Container Size")  
 Development Container info:
 ![Docker Image Size](https://img.shields.io/docker/image-size/thecaptain989/lidarr-flac2mp3 "Container Size")
-![Docker Pulls](https://img.shields.io/docker/pulls/thecaptain989/lidarr-flac2mp3 "Container Pulls")  
-Production Container info: ![Docker Image Size](https://img.shields.io/docker/image-size/linuxserver/mods/lidarr-flac2mp3 "Container Size")
+![Docker Pulls](https://img.shields.io/docker/pulls/thecaptain989/lidarr-flac2mp3 "Container Pulls")
 
 # Installation
 1. Pull the [linuxserver/lidarr](https://hub.docker.com/r/linuxserver/lidarr "LinuxServer.io's Lidarr container") docker image from GitHub Container Registry or Docker Hub:  
@@ -122,8 +122,8 @@ Regular expression syntax is beyond the scope of this document.  See this [tutor
                # Convert to Opus format, 192 kbit/s, cover art
 -a "-vn -c:a libopus -b:a 192K" -e .opus -r '[.]mp3$'
                # Convert .mp3 files to Opus format, 192 kbit/s, no cover art
--a "-y -map 0 -c:a aac -b:a 240k -c:v copy" -e mp4
-               # Convert to MP4 format, using AAC 240 kbit/s audio, cover art, overwrite file
+-a "-y -map 0 -c:a aac -b:a 240k -c:v copy" -e m4a
+               # Convert to M4A format, using AAC 240 kbit/s audio, cover art, overwrite file
 --file "/path/to/audio/a-ha/Hunting High and Low/01 Take on Me.flac"
                # Batch Mode
                # Output 320kbit/s MP3
