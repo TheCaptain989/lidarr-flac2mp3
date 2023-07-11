@@ -229,7 +229,7 @@ This would not be possible without the following:
 
 [Lidarr](https://lidarr.audio/ "Lidarr homepage")  
 [LinuxServer.io Lidarr](https://hub.docker.com/r/linuxserver/lidarr "Lidarr Docker container") container  
-[LinuxServer.io Docker Mods]((https://github.com/linuxserver/docker-mods "Docker Mods containers") project  
+[LinuxServer.io Docker Mods](https://github.com/linuxserver/docker-mods "Docker Mods containers") project  
 [ffmpeg](https://ffmpeg.org/ "FFmpeg homepage")  
 Icons made by [Freepik](https://www.freepik.com) from [Flaticon](https://www.flaticon.com/)
 
