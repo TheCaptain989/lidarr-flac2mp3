@@ -496,9 +496,8 @@ function import_tracks {
   [ $flac2mp3_debug -ge 1 ] && echo "Debug|Importing ${#flac2mp3_import_list[*]} new files into Lidarr. Calling Lidarr API using POST and URL '$flac2mp3_api_url/command' with data {\"name\":\"ManualImport\",\"files\":[$flac2mp3_json],\"importMode\":\"auto\",\"replaceExistingFiles\":false}" | log
   unset flac2mp3_result
   flac2mp3_result=$(curl -sf -H "X-Api-Key: $flac2mp3_apikey" \
-    --json "{\"name\":\"ManualImport\",\"files\":[" \
-    --json "$flac2mp3_json" \
-    --json "]," \
+    --json "{\"name\":\"ManualImport\"," \
+    --json "\"files\":[$flac2mp3_json]," \
     --json "\"importMode\":\"auto\",\"replaceExistingFiles\":false}" \
     "$flac2mp3_api_url/command")
   local flac2mp3_curlret=$?; [ $flac2mp3_curlret -ne 0 ] && {
@@ -824,7 +823,7 @@ for flac2mp3_track in $flac2mp3_tracks; do
   fi
 
   # Call Lidarr to delete the original file, or recycle if configured.
-  flac2mp3_track_id=$(echo $flac2mp3_trackfiles | jq ".[] | select(.path == \"$flac2mp3_track\") | .id")
+  flac2mp3_track_id=$(echo $flac2mp3_trackfiles | jq -crM ".[] | select(.path == \"$flac2mp3_track\") | .id")
   delete_track $flac2mp3_track_id
   flac2mp3_return=$?; [ $flac2mp3_return -ne 0 ] && {
     flac2mp3_message="Error|[$flac2mp3_return] Lidarr error when deleting the original track: \"$flac2mp3_track\". Not importing new track into Lidarr."
@@ -857,8 +856,8 @@ elif [ -n "$flac2mp3_api_url" ]; then
         flac2mp3_json=""
         [ $flac2mp3_debug -ge 1 ] && echo "Debug|Building JSON data to import" | log
         for flac2mp3_newTrack in "${flac2mp3_import_list[@]}"; do
-          flac2mp3_newTrack_info="$(echo $flac2mp3_result | jq ".[] | select(.path == \"$flac2mp3_newTrack\")")"
-          [ $flac2mp3_debug -ge 1 ] && echo "Debug|New file \"$flac2mp3_newTrack\" has an ID of $(echo $flac2mp3_newTrack_info | jq '.tracks[].id')" | log
+          flac2mp3_newTrack_info="$(echo $flac2mp3_result | jq -crM ".[] | select(.path == \"$flac2mp3_newTrack\")")"
+          [ $flac2mp3_debug -ge 1 ] && echo "Debug|New file \"$flac2mp3_newTrack\" has an ID of $(echo $flac2mp3_newTrack_info | jq -crM '.tracks[].id')" | log
           # Check for empty track ID. This is an indication of an identification problem during the Lidarr scan.
           # If imported, files will likely have a quality of "Unknown".
           if [ "$(echo $flac2mp3_newTrack_info | jq -crM '.tracks[].id')" -eq "" ]; then
@@ -905,7 +904,7 @@ elif [ -n "$flac2mp3_api_url" ]; then
           echo "$flac2mp3_message" >&2
         }
       else
-        flac2mp3_message="Error|[$flac2mp3_return] Lidarr error getting import file list in \"$lidarr_artist_path\" for artist ID $lidarr_artist_id"
+        flac2mp3_message="Error|Lidarr error getting import file list in \"$lidarr_artist_path\" for artist ID $lidarr_artist_id"
         echo "$flac2mp3_message" | log
         echo "$flac2mp3_message" >&2
         flac2mp3_exitstatus=17
