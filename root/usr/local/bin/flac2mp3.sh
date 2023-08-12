@@ -673,7 +673,7 @@ fi
 
 # Process tracks
 #  Changing the input field separator to split track string
-declare -x flac2mp3_import_list
+declare -x flac2mp3_import_list=""
 IFS=\|
 for flac2mp3_track in $flac2mp3_tracks; do
   # Guard clause: regex not match
@@ -809,6 +809,7 @@ done
 IFS=$' \t\n'
 # Remove trailing pipe
 flac2mp3_import_list="${flac2mp3_import_list%|}"
+[ $flac2mp3_debug -ge 1 ] && echo "Debug|Track import list: \"$flac2mp3_import_list\"" | log
 #### END MAIN
 
 #### Call Lidarr API to update database
@@ -828,12 +829,12 @@ elif [ -n "$flac2mp3_api_url" ]; then
         # Build JSON data for all tracks
         # NOTE: Tracks with empty track IDs will not appear in the resulting JSON and will therefore not be imported into Lidarr
         [ $flac2mp3_debug -ge 1 ] && echo "Debug|Building JSON data to import" | log
-        flac2mp3_json=$( echo $flac2mp3_result | jq -jcrM '
+        export flac2mp3_json=$(echo $flac2mp3_result | jq -jcrM "
           map(
-            select(.path | inside(env.flac2mp3_import_list)) |
-            {path, "artistId":env.lidarr_artist_id, "albumId":env.lidarr_album_id, albumReleaseId,"trackIds":.tracks[].id, quality, "disableReleaseSwitching":false}
+            select(.path | inside(\"$flac2mp3_import_list\")) |
+            {path, \"artistId\":$lidarr_artist_id, \"albumId\":$lidarr_album_id, albumReleaseId,\"trackIds\":[.tracks[].id], quality, \"disableReleaseSwitching\":false}
           )
-        ')
+        ")
 
         # Import new files into Lidarr
         import_tracks
