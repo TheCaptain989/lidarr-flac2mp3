@@ -368,8 +368,8 @@ function check_job {
   #  2 - job returned failed status
   # 10 - curl error
   local i=0
-  for ((i=1; i <= 15; i++)); do
-    [ $flac2mp3_debug -ge 1 ] && echo "Debug|Checking job $flac2mp3_jobid completion, try #$i. Calling Lidarr API using GET and URL '$flac2mp3_api_url/command/$flac2mp3_jobid'" | log
+  [ $flac2mp3_debug -ge 1 ] && echo "Debug|Checking job $flac2mp3_jobid completion. Calling Lidarr API using GET and URL '$flac2mp3_api_url/command/$flac2mp3_jobid'" | log
+  for ((i=1; i <= 60; i++)); do
     unset flac2mp3_result
     flac2mp3_result=$(curl -sf -H "X-Api-Key: $flac2mp3_apikey" \
       -H "Content-Type: application/json" \
@@ -401,27 +401,6 @@ function check_job {
   done
   return $flac2mp3_return
 }
-# Get Album info
-function get_album_info {
-  [ $flac2mp3_debug -ge 1 ] && echo "Debug|Getting album info for album id $lidarr_album_id. Calling Lidarr API using GET and URL '$flac2mp3_api_url/album/$lidarr_album_id'" | log
-  unset flac2mp3_result
-  flac2mp3_result=$(curl -sf -H "X-Api-Key: $flac2mp3_apikey" \
-    -H "Content-Type: application/json" \
-		-H "Accept: application/json" \
-    --get "$flac2mp3_api_url/album/$lidarr_album_id")
-  local flac2mp3_curlret=$?; [ $flac2mp3_curlret -ne 0 ] && {
-    local flac2mp3_message="Error|[$flac2mp3_curlret] curl error when calling: '$flac2mp3_api_url/album/$lidarr_album_id'"
-    echo "$flac2mp3_message" | log
-    echo "$flac2mp3_message" >&2
-  }
-  [ $flac2mp3_debug -ge 3 ] && echo "API returned: $flac2mp3_result" | awk '{print "Debug|"$0}' | log
-  if [ $flac2mp3_curlret -eq 0 -a "$(echo $flac2mp3_result | jq '.id?')" != "null" ]; then
-    local flac2mp3_return=0
-  else
-    local flac2mp3_return=1
-  fi
-  return $flac2mp3_return
-}
 # Get all track files from album
 function get_trackfile_info {
   [ $flac2mp3_debug -ge 1 ] && echo "Debug|Getting track file info for album id $lidarr_album_id. Calling Lidarr API using GET and URL '$flac2mp3_api_url/trackFile?albumId=$lidarr_album_id'" | log
@@ -437,7 +416,7 @@ function get_trackfile_info {
     echo "$flac2mp3_message" >&2
   }
   [ $flac2mp3_debug -ge 2 ] && echo "API returned: $flac2mp3_result" | awk '{print "Debug|"$0}' | log
-  if [ $flac2mp3_curlret -eq 0 -a "$(echo $flac2mp3_result | jq '.[].id?')" != "null" ]; then
+  if [ $flac2mp3_curlret -eq 0 -a "$(echo $flac2mp3_result | jq -crM '.[].id?')" != "null" ]; then
     local flac2mp3_return=0
   else
     local flac2mp3_return=1
@@ -493,15 +472,15 @@ function get_import_info {
 # Import new track into Lidarr
 function import_tracks {
   echo "Info|Calling Lidarr API to import tracks" | log
-  [ $flac2mp3_debug -ge 1 ] && echo "Debug|Importing ${#flac2mp3_import_list[*]} new files into Lidarr. Calling Lidarr API using POST and URL '$flac2mp3_api_url/command' with data {\"name\":\"ManualImport\",\"files\":[$flac2mp3_json],\"importMode\":\"auto\",\"replaceExistingFiles\":false}" | log
+  [ $flac2mp3_debug -ge 1 ] && echo "Debug|Importing $flac2mp3_import_count new files into Lidarr. Calling Lidarr API using POST and URL '$flac2mp3_api_url/command' with data {\"name\":\"ManualImport\",\"files\":$flac2mp3_json,\"importMode\":\"auto\",\"replaceExistingFiles\":false}" | log
   unset flac2mp3_result
   flac2mp3_result=$(curl -sf -H "X-Api-Key: $flac2mp3_apikey" \
     --json "{\"name\":\"ManualImport\"," \
-    --json "\"files\":[$flac2mp3_json]," \
+    --json "\"files\":$flac2mp3_json," \
     --json "\"importMode\":\"auto\",\"replaceExistingFiles\":false}" \
     "$flac2mp3_api_url/command")
   local flac2mp3_curlret=$?; [ $flac2mp3_curlret -ne 0 ] && {
-    local flac2mp3_message="Error|[$flac2mp3_curlret] curl error when calling: \"$flac2mp3_api_url/command\" with data {\"name\":\"ManualImport\",\"files\":[$flac2mp3_json],\"importMode\":\"auto\",\"replaceExistingFiles\":false}"
+    local flac2mp3_message="Error|[$flac2mp3_curlret] curl error when calling: \"$flac2mp3_api_url/command\" with data {\"name\":\"ManualImport\",\"files\":$flac2mp3_json,\"importMode\":\"auto\",\"replaceExistingFiles\":false}"
     echo "$flac2mp3_message" | log
     echo "$flac2mp3_message" >&2
   }
@@ -603,16 +582,6 @@ elif [ -f "$flac2mp3_config" ]; then
     [ $flac2mp3_debug -ge 1 ] && echo "Debug|Detected Lidarr version $flac2mp3_version" | log
   fi
 
-  # Get album release ID. Needed to import new files correctly.
-  if get_album_info; then
-    flac2mp3_albumReleaseId=$(echo "$flac2mp3_result" | jq '.releases[] | select(.monitored==true) | .id')
-    [ $flac2mp3_debug -ge 1 ] && echo "Debug|Detected Lidarr album ID $lidarr_album_id with release ID $flac2mp3_albumReleaseId" | log
-  else
-    flac2mp3_message="Warn|Unable to get album info for album ID $lidarr_album_id"
-    echo "$flac2mp3_message" | log
-    echo "$flac2mp3_message" >&2
-  fi
-
   # Get album trackfile info. Need the IDs to delete the old tracks.
   if get_trackfile_info; then
     flac2mp3_trackfiles="$flac2mp3_result"
@@ -704,7 +673,7 @@ fi
 
 # Process tracks
 #  Changing the input field separator to split track string
-declare -a flac2mp3_import_list
+declare -x flac2mp3_import_list
 IFS=\|
 for flac2mp3_track in $flac2mp3_tracks; do
   # Guard clause: regex not match
@@ -754,6 +723,7 @@ for flac2mp3_track in $flac2mp3_tracks; do
             # Only trigger on multiple genres
             if [[ $flac2mp3_tag_genre =~ \; ]]; then
               case "$flac2mp3_tag_genre" in
+                *Synth-Pop*) flac2mp3_ffmpeg_metadata+='-metadata genre="Electronica & Dance" ' ;;
                 *Pop*) flac2mp3_ffmpeg_metadata+='-metadata genre="Pop" ' ;;
                 *Indie*) flac2mp3_ffmpeg_metadata+='-metadata genre="Alternative & Indie" ' ;;
                 *Industrial*) flac2mp3_ffmpeg_metadata+='-metadata genre="Industrial Rock" ' ;;
@@ -834,9 +804,11 @@ for flac2mp3_track in $flac2mp3_tracks; do
   }
 
   # Add new track to list of tracks to import
-  flac2mp3_import_list+=("$flac2mp3_newTrack")
+  flac2mp3_import_list+="${flac2mp3_newTrack}|"
 done
 IFS=$' \t\n'
+# Remove trailing pipe
+flac2mp3_import_list="${flac2mp3_import_list%|}"
 #### END MAIN
 
 #### Call Lidarr API to update database
@@ -849,32 +821,19 @@ elif [ -n "$flac2mp3_api_url" ]; then
   # Check for artist ID
   if [ -n "$lidarr_artist_id" ]; then
     # Scan for files to import into Lidarr
-    if [ ${#flac2mp3_import_list[*]} -ne 0 ]; then
-      [ $flac2mp3_debug -ge 1 ] && echo "Starting to import ${#flac2mp3_import_list[*]} new files" | awk '{print "Debug|"$0}' | log
+    export flac2mp3_import_count=$(echo $flac2mp3_import_list |  awk -F\| '{print NF}')
+    if [ $flac2mp3_import_count -ne 0 ]; then
+      echo "Info|Preparing to import $flac2mp3_import_count new files. This make take a long time for large libraries." | log
       if get_import_info; then
-        # Build JSON data for each track
-        flac2mp3_json=""
+        # Build JSON data for all tracks
+        # NOTE: Tracks with empty track IDs will not appear in the resulting JSON and will therefore not be imported into Lidarr
         [ $flac2mp3_debug -ge 1 ] && echo "Debug|Building JSON data to import" | log
-        for flac2mp3_newTrack in "${flac2mp3_import_list[@]}"; do
-          flac2mp3_newTrack_info="$(echo $flac2mp3_result | jq -crM ".[] | select(.path == \"$flac2mp3_newTrack\")")"
-          [ $flac2mp3_debug -ge 1 ] && echo "Debug|New file \"$flac2mp3_newTrack\" has an ID of $(echo $flac2mp3_newTrack_info | jq -crM '.tracks[].id')" | log
-          # Check for empty track ID. This is an indication of an identification problem during the Lidarr scan.
-          # If imported, files will likely have a quality of "Unknown".
-          if [ "$(echo $flac2mp3_newTrack_info | jq -crM '.tracks[].id')" -eq "" ]; then
-            flac2mp3_message="Error|Lidarr was unable to determine the ID for track \"$flac2mp3_newTrack\". Skipping import."
-            echo "$flac2mp3_message" | log
-            echo "$flac2mp3_message" >&2
-            flac2mp3_exitstatus=17
-            continue
-          fi
-          flac2mp3_json+="{\"path\":\"$flac2mp3_newTrack\",\"artistId\":$lidarr_artist_id,\"albumId\":$lidarr_album_id,"
-          flac2mp3_json+="\"albumReleaseId\":$flac2mp3_albumReleaseId,"
-          flac2mp3_json+="\"trackIds\":[$(echo $flac2mp3_newTrack_info | jq -crM '.tracks[].id')],"
-          flac2mp3_json+="\"quality\":$(echo $flac2mp3_newTrack_info | jq -crM .quality),"
-          flac2mp3_json+="\"disableReleaseSwitching\":false},"
-        done
-        # Remove trailing comma
-        flac2mp3_json="${flac2mp3_json%,}"
+        flac2mp3_json=$( echo $flac2mp3_result | jq -jcrM '
+          map(
+            select(.path | inside(env.flac2mp3_import_list)) |
+            {path, "artistId":env.lidarr_artist_id, "albumId":env.lidarr_album_id, albumReleaseId,"trackIds":.tracks[].id, quality, "disableReleaseSwitching":false}
+          )
+        ')
 
         # Import new files into Lidarr
         import_tracks
