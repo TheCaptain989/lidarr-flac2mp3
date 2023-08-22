@@ -25,7 +25,13 @@ jobs:
 
       - name: Tag image
         run: |
-          docker tag ${ENDPOINT}:${{ github.sha }} ${ENDPOINT}:latest
+          if [[ "${{ github.ref_name }}" == 'master' ]]; then
+            IMAGETAG=${ENDPOINT}:latest
+          else
+            IMAGETAG=${ENDPOINT}:${{ github.ref_name }}
+          fi
+          echo "IMAGETAG=${IMAGETAG}" >> $GITHUB_ENV
+          docker tag ${ENDPOINT}:${{ github.sha }} ${IMAGETAG}
 
       - name: Credential check
         run: |
@@ -49,7 +55,7 @@ jobs:
         if: ${{ env.DOCKERUSER != '' && env.DOCKERPASS != '' }}
         run: |
           docker push ${ENDPOINT}:${{ github.sha }}
-          docker push ${ENDPOINT}:latest
+          docker push ${IMAGETAG}
           echo "Pushed the following images/tags to Docker Hub:" >> $GITHUB_STEP_SUMMARY
           echo "${ENDPOINT}:${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
-          echo "${ENDPOINT}:latest" >> $GITHUB_STEP_SUMMARY
+          echo "${IMAGETAG}" >> $GITHUB_STEP_SUMMARY
