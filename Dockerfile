@@ -15,6 +15,9 @@ RUN \
 ## Single layer deployed image ##
 FROM scratch
 
+LABEL org.opencontainers.image.source=https://github.com/TheCaptain989/lidarr-flac2mp3
+LABEL org.opencontainers.image.description="A Docker Mod to Lidarr to automatically convert FLAC files to MP3s, or other format"
+LABEL org.opencontainers.image.licenses=GPL-3.0-only
 LABEL maintainer="TheCaptain989"
 
 # Copy local files
