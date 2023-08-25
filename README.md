@@ -190,7 +190,7 @@ Using this function, you can easily process all of your audio files in any subdi
 #### Script Execution Differences in Batch Mode
 Because the script is not called from within Lidarr, expect the following behavior while in Batch Mode:
 * *The file name must be specified on the command line*<br/>(The `-f` option places the script in Batch Mode)
-* *Lidarr APIs are not called and its database is not updated.*<br/>This may require a manual rescan of converted music files.
+* *Lidarr APIs are not called and its database is not updated.*<br/>This may require a manual import of converted music files or an artist rescan.
 * *Original audio files are deleted.*<br/>The Recycle Bin function is not available. (Modifiable using the `-k` option.)
 
 #### Batch Example
