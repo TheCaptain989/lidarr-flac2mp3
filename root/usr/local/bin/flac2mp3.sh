@@ -365,13 +365,14 @@ function get_version {
 function check_job {
   # Exit codes:
   #  0 - success
-  #  1 - loop timed out
-  #  2 - job returned failed status
+  #  1 - queued
+  #  2 - failed
+  #  3 - loop timed out
   # 10 - curl error
   local i=0
   local url="$flac2mp3_api_url/command/$flac2mp3_jobid"
   [ $flac2mp3_debug -ge 1 ] && echo "Debug|Checking job $flac2mp3_jobid completion. Calling Lidarr API using GET and URL '$url'" | log
-  for ((i=1; i <= 60; i++)); do
+  for ((i=1; i <= 15; i++)); do
     unset flac2mp3_result
     flac2mp3_result=$(curl -s --fail-with-body -H "X-Api-Key: $flac2mp3_apikey" \
       -H "Content-Type: application/json" \
@@ -391,6 +392,10 @@ function check_job {
       local flac2mp3_return=2
       break
     fi
+    if [ "$(echo $flac2mp3_result | jq -crM .status)" = "queued" ]; then
+      local flac2mp3_return=1
+      break
+    fi
     if [ "$(echo $flac2mp3_result | jq -crM .status)" = "completed" ]; then
       local flac2mp3_return=0
       break
@@ -398,7 +403,7 @@ function check_job {
 
     # It may have timed out, so let's wait a second
     [ $flac2mp3_debug -ge 1 ] && echo "Debug|Job not done. Waiting 1 second." | log
-    local flac2mp3_return=1
+    local flac2mp3_return=3
     sleep 1
   done
   return $flac2mp3_return
@@ -859,11 +864,14 @@ elif [ -n "$flac2mp3_api_url" ]; then
         check_job
         flac2mp3_return=$?; [ $flac2mp3_return -ne 0 ] && {
           case $flac2mp3_return in
-            1) flac2mp3_message="Warn|Script timed out waiting on Lidarr job ID $flac2mp3_jobid timed out. Last status was: $(echo $flac2mp3_result | jq -crM .status)"
-               flac2mp3_exitstatus=18
+            1) flac2mp3_message="Info|Lidarr job ID $flac2mp3_jobid is queued. Trusting this will complete and exiting."
+               flac2mp3_exitstatus=0
             ;;
             2) flac2mp3_message="Warn|Lidarr job ID $flac2mp3_jobid failed."
                flac2mp3_exitstatus=17
+            ;;
+            3) flac2mp3_message="Warn|Script timed out waiting on Lidarr job ID $flac2mp3_jobid. Last status was: $(echo $flac2mp3_result | jq -crM .status)"
+               flac2mp3_exitstatus=18
             ;;
            10) flac2mp3_message="Error|Lidarr job ID $flac2mp3_jobid returned a curl error."
                flac2mp3_exitstatus=17
