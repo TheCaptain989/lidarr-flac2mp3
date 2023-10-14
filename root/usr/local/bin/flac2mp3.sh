@@ -588,7 +588,7 @@ elif [ -f "$flac2mp3_config" ]; then
   [[ $flac2mp3_bindaddress = "*" ]] && flac2mp3_bindaddress=localhost
 
   # Build URL to Lidarr API
-  flac2mp3_api_url="http://$flac2mp3_bindaddress:$flac2mp3_port$flac2mp3_urlbase/api/v1"
+  flac2mp3_api_url="http://$flac2mp3_bindaddress:$flac2mp3_port${flac2mp3_urlbase:+/$flac2mp3_urlbase}/api/v1"
 
   # Check Lidarr version
   if get_version; then
