@@ -19,11 +19,32 @@ Development Container info:
 
 2. Configure the Docker container with all the port, volume, and environment settings from the *original container documentation* here:  
   **[linuxserver/lidarr](https://hub.docker.com/r/linuxserver/lidarr "Docker container")**
-   1. Add a **DOCKER_MODS** environment variable to the `docker run` command, as follows:  
-      - Stable release: `-e DOCKER_MODS=linuxserver/mods:lidarr-flac2mp3`
-      - Dev/test release: `-e DOCKER_MODS=thecaptain989/lidarr-flac2mp3:latest`
+   1. Add a **DOCKER_MODS** environment variable to your `compose.yml` file or `docker run` command, as follows:  
+      - Stable release: `DOCKER_MODS=linuxserver/mods:lidarr-flac2mp3`
+      - Dev/test release: `DOCKER_MODS=thecaptain989/lidarr-flac2mp3:latest`
 
-      *Example Docker CLI Configuration*  
+      *Example Docker Compose YAML Configuration*  
+      ```yaml
+      version: "2.1"
+      services:
+        lidarr:
+          image: lscr.io/linuxserver/lidarr
+          container_name: lidarr
+          environment:
+            - PUID=1000
+            - PGID=1000
+            - TZ=America/Chicago
+            - DOCKER_MODS=linuxserver/mods:lidarr-flac2mp3
+          volumes:
+            - /path/to/appdata/config:/config
+            - /path/to/music:/music
+            - /path/to/downloads:/downloads
+          ports:
+            - 8686:8686
+          restart: unless-stopped
+      ```  
+
+      *Example Docker Run Command*  
        ```shell
        docker run -d \
          --name=lidarr \
@@ -37,10 +58,10 @@ Development Container info:
          -v /path/to/downloads:/downloads \
          --restart unless-stopped \
          lscr.io/linuxserver/lidarr
-       ```   
+       ```  
 
       *Example Synology Configuration*  
-      ![flac2mp3](.assets/lidarr-synology.png "Synology container settings")
+      ![flac2mp3](.assets/lidarr-synology.png "Synology container settings")  
 
    2. Start the container.
 
@@ -163,7 +184,7 @@ Then put `/config/flac2mp3-custom.sh` in the **Path** field in place of `/usr/lo
 ### Environment Variable
 The `flac2mp3.sh` script also allows the use of arguments provided by the `FLAC2MP3_ARGS` environment variable. This allows advanced use cases without having to provide a custom script.
 
-For example, the following value would convert any .mp3 to Opus:
+For example, the following value in your `docker run` command would convert any .mp3 to Opus:
 ```
 -e FLAC2MP3_ARGS='-a "-vn -c:a libopus -b:a 192k" -e .opus -r "[.]mp3$"'
 ```
@@ -190,7 +211,7 @@ Using this function, you can easily process all of your audio files in any subdi
 
 #### Script Execution Differences in Batch Mode
 Because the script is not called from within Lidarr, expect the following behavior while in Batch Mode:
-* *The file name must be specified on the command line*<br/>(The `-f` option places the script in Batch Mode)
+* *The filename must be specified on the command line*<br/>(The `-f` option places the script in Batch Mode)
 * *Lidarr APIs are not called and its database is not updated.*<br/>This may require a manual import of converted music files or an artist rescan.
 * *Original audio files are deleted.*<br/>The Recycle Bin function is not available. (Modifiable using the `-k` option.)
 
@@ -211,13 +232,13 @@ Log rotation is performed, with 5 log files of 1MB each kept, matching Lidarr's 
 >![danger] **NOTE:** If debug logging is enabled with a level above 1, the log file can grow very large very quickly and is much more likely to be rotated.  *Do not leave high-level debug logging enabled permanently.*
 
 #### Metadata Corrections
-This feature is not meant for general purpose use. It is only documented for completeness.
+This feature is not meant for general purpose use. It is only documented here for completeness.
 
 List of supported tags and metadata corrections that are applied:
 
 |Tag|Original|Correction
 |---|---|---
-|title|Parenthesis for live\|remix, etc. "()"|Square brackets "[]"
+|title|Parenthesis for live\|remix, etc. "()"|Square brackets "\[]"
 |disc|1|1/1
 |genre|/Pop/|"Pop"
 | |/Indie/|"Alternative & Indie"
@@ -226,7 +247,13 @@ List of supported tags and metadata corrections that are applied:
 | |/Punk\|Alternative/|"Alternative & Punk"
 | |/Rock/|"Rock"
 
-## Credits
+# Uninstall
+To completely remove the mod:
+1. Delete the custom script from Lidarr's *Settings* > *Connect* screen that you created in the [Installation](./README.md#installation) section above.
+2. Stop and delete the Lidarr container.
+3. Exclude the **DOCKER_MODS** environment variable from your `compose.yaml` file or the `docker run` command when re-creating the Lidarr container.
+
+# Credits
 This would not be possible without the following:
 
 [Lidarr](https://lidarr.audio/ "Lidarr homepage")  
