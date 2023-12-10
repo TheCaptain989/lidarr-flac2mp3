@@ -253,7 +253,10 @@ To completely remove the mod:
 2. Stop and delete the Lidarr container.
 3. Exclude the **DOCKER_MODS** environment variable from your `compose.yaml` file or the `docker run` command when re-creating the Lidarr container.
 
+___
+
 # Credits
+
 This would not be possible without the following:
 
 [Lidarr](https://lidarr.audio/ "Lidarr homepage")  

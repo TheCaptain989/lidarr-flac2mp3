@@ -768,7 +768,7 @@ for flac2mp3_track in $flac2mp3_tracks; do
       for flac2mp3_tag in $(echo $flac2mp3_tags | tr ',' '|'); do
         case "$flac2mp3_tag" in
           title )  # Fix for parenthesis in titles for live and mix names
-            flac2mp3_tag_title=$(echo "$flac2mp3_ffprobe_json" | jq -crM '.format.tags.title')
+            flac2mp3_tag_title=$(echo "$flac2mp3_ffprobe_json" | jq -crM '.format.tags | to_entries[] | select(.key | match("title"; "i")).value')
             [ $flac2mp3_debug -ge 1 ] && echo "Debug|Original metadata: title=$flac2mp3_tag_title" | log
             flac2mp3_pattern='\([^)]+\)$'      # Rough way to limit editing metadata for every track
             if [[ "$flac2mp3_tag_title" =~ $flac2mp3_pattern ]]; then
@@ -776,14 +776,14 @@ for flac2mp3_track in $flac2mp3_tracks; do
             fi
           ;;
           disc )   # Fix one disc by itself
-            flac2mp3_tag_disc=$(echo "$flac2mp3_ffprobe_json" | jq -crM '.format.tags.disc')
+            flac2mp3_tag_disc=$(echo "$flac2mp3_ffprobe_json" | jq -crM '.format.tags | to_entries[] | select(.key | match("disc"; "i")).value')
             [ $flac2mp3_debug -ge 1 ] && echo "Debug|Original metadata: disc=$flac2mp3_tag_disc" | log
             if [ "$flac2mp3_tag_disc" == "1" ]; then
               flac2mp3_ffmpeg_metadata+='-metadata disc="1/1" '
             fi
           ;;
           genre )   # Fix multiple genres
-            flac2mp3_tag_genre=$(echo "$flac2mp3_ffprobe_json" | jq -crM '.format.tags | to_entries[] | select(.key | match("genre";"i")).value')
+            flac2mp3_tag_genre=$(echo "$flac2mp3_ffprobe_json" | jq -crM '.format.tags | to_entries[] | select(.key | match("genre"; "i")).value')
             [ $flac2mp3_debug -ge 1 ] && echo "Debug|Original metadata: genre=$flac2mp3_tag_genre" | log
             # Only trigger on multiple genres
             if [[ $flac2mp3_tag_genre =~ \; ]]; then
