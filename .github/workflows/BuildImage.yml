@@ -28,12 +28,12 @@ jobs:
           if [[ '${{ github.ref_name }}' == 'master' ]]; then
             IMAGETAG=${ENDPOINT}:latest
           else
-            IMAGETAG='${ENDPOINT}:${{ github.ref_name }}'
+            IMAGETAG="${ENDPOINT}:${{ github.ref_name }}"
           fi
           echo "IMAGETAG=${IMAGETAG}" >> $GITHUB_ENV
-          docker tag ${ENDPOINT}:${{ github.sha }} '${IMAGETAG}'
+          docker tag ${ENDPOINT}:${{ github.sha }} "${IMAGETAG}"
           docker tag ${ENDPOINT}:${{ github.sha }} ghcr.io/${ENDPOINT}:${{ github.sha }}
-          docker tag ${ENDPOINT}:${{ github.sha }} ghcr.io/'${IMAGETAG}'
+          docker tag ${ENDPOINT}:${{ github.sha }} ghcr.io/"${IMAGETAG}"
 
       - name: Credential check
         run: |
@@ -57,10 +57,10 @@ jobs:
         if: ${{ env.CR_USER && env.CR_PAT }}
         run: |
           docker push ghcr.io/${ENDPOINT}:${{ github.sha }}
-          docker push ghcr.io/'${IMAGETAG}''
+          docker push ghcr.io/"${IMAGETAG}"
           echo "Pushed the following images/tags to GHCR:" >> $GITHUB_STEP_SUMMARY
           echo "ghcr.io/${ENDPOINT}:${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
-          echo 'ghcr.io/${IMAGETAG}' >> $GITHUB_STEP_SUMMARY
+          echo "ghcr.io/${IMAGETAG}" >> $GITHUB_STEP_SUMMARY
 
       - name: Login to DockerHub
         if: ${{ env.DOCKERUSER && env.DOCKERPASS }}
@@ -71,8 +71,8 @@ jobs:
         if: ${{ env.DOCKERUSER && env.DOCKERPASS }}
         run: |
           docker push ${ENDPOINT}:${{ github.sha }}
-          docker push '${IMAGETAG}''
+          docker push "${IMAGETAG}"
           echo "Pushed the following images/tags to Docker Hub:" >> $GITHUB_STEP_SUMMARY
           echo "${ENDPOINT}:${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
-          echo '${IMAGETAG}'' >> $GITHUB_STEP_SUMMARY
+          echo "${IMAGETAG}" >> $GITHUB_STEP_SUMMARY
           
