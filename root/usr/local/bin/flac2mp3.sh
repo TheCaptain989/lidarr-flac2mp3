@@ -324,8 +324,10 @@ if [[ "${flac2mp3_type,,}" = "batch" ]]; then
   # Batch mode
   export lidarr_eventtype="Convert"
 elif [[ "${flac2mp3_type,,}" = "lidarr" ]]; then
+  # shellcheck disable=SC2154
   export flac2mp3_tracks="$lidarr_addedtrackpaths"
   # Catch for other environment variable
+  # shellcheck disable=SC2154
   [ -z "$flac2mp3_tracks" ] && flac2mp3_tracks="$lidarr_trackfile_path"
 else
   # Called in an unexpected way
@@ -338,8 +340,9 @@ fi
 # Can still go over flac2mp3_maxlog if read line is too long
 #  Must include whole function in subshell for read to work!
 function log {(
-  while read
+  while read -r
   do
+    # shellcheck disable=2046
     echo $(date +"%Y-%m-%d %H:%M:%S.%1N")\|"[$flac2mp3_pid]$REPLY" >>"$flac2mp3_log"
     local flac2mp3_filesize=$(stat -c %s "$flac2mp3_log")
     if [ $flac2mp3_filesize -gt $flac2mp3_maxlogsize ]
@@ -355,7 +358,7 @@ function log {(
 # Inspired by https://stackoverflow.com/questions/893585/how-to-parse-xml-in-bash
 function read_xml {
   local IFS=\>
-  read -d \< flac2mp3_xml_entity flac2mp3_xml_content
+  read -r -d \< flac2mp3_xml_entity flac2mp3_xml_content
 }
 # Check Lidarr version
 function get_version {
@@ -429,6 +432,7 @@ function check_job {
 # Get all track files from album
 function get_trackfile_info {
   local url="$flac2mp3_api_url/trackFile"
+  # shellcheck disable=SC2154
   local data="albumId=$lidarr_album_id"
   [ $flac2mp3_debug -ge 1 ] && echo "Debug|Getting track file info for album id $lidarr_album_id. Calling Lidarr API using GET and URL '$url?$data'" | log
   unset flac2mp3_result
@@ -475,6 +479,7 @@ function delete_track {
 # Get file details on possible files to import into Lidarr
 function get_import_info {
   local url="$flac2mp3_api_url/manualimport"
+  # shellcheck disable=SC2154
   local data="artistId=$lidarr_artist_id&folder=$lidarr_artist_path&filterExistingFiles=true&replaceExistingFiles=false"
   [ $flac2mp3_debug -ge 1 ] && echo "Debug|Getting list of files that can be imported. Calling Lidarr API using GET and URL '$url?$data'" | log
   unset flac2mp3_result
@@ -703,6 +708,7 @@ fi
 # Build dynamic log message
 flac2mp3_message="Info|Lidarr event: ${lidarr_eventtype}"
 if [ "$flac2mp3_type" != "batch" ]; then
+  # shellcheck disable=SC2154
   flac2mp3_message+=", Artist: ${lidarr_artist_name} (${lidarr_artist_id}), Album: ${lidarr_album_title} (${lidarr_album_id})"
 fi
 if [ -z "$flac2mp3_ffmpegadv" ]; then
@@ -808,12 +814,14 @@ for flac2mp3_track in $flac2mp3_tracks; do
                 *Industrial*) flac2mp3_ffmpeg_metadata+='-metadata genre="Industrial Rock" ' ;;
                 *Electronic*) flac2mp3_ffmpeg_metadata+='-metadata genre="Electronica & Dance" ' ;;
                 *Punk*|*Alternative*) flac2mp3_ffmpeg_metadata+='-metadata genre="Alternative & Punk" ' ;;
+                # shellcheck disable=SC2089
                 *Rock*) flac2mp3_ffmpeg_metadata+='-metadata genre="Rock" ' ;;
               esac
             fi
           ;;
         esac
       done
+      # shellcheck disable=SC2090
       [ $flac2mp3_debug -ge 1 ] && echo "Debug|New metadata: $(echo $flac2mp3_ffmpeg_metadata | sed -e 's/-metadata //g')" | log
     else
       echo "Warn|ffprobe did not return any data when querying track: \"$flac2mp3_track\"" | log
