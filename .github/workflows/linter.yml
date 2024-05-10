@@ -1,0 +1,47 @@
+name: Lint Code Base
+
+on: 
+  push:
+    branches-ignore: [master, main]
+
+jobs:
+  run-lint:
+    name: Lint Job
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+      statuses: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          # Full git history is needed to get a proper list of changed files within `super-linter`
+          fetch-depth: 0
+
+      - name: Lint Code Base
+        uses: super-linter/super-linter/slim@v5
+        env:
+          VALIDATE_BASH: true
+          BASH_SEVERITY: style
+          BASH_FILE_NAME: .shellcheckrc
+          # Adding this here for now becaue the config file does not work
+          SHELLCHECK_OPTS: '--exclude SC1090,SC1091,SC2086,SC2155,SC2166'
+          VALIDATE_BASH_EXEC: true
+          VALIDATE_DOCKERFILE_HADOLINT: true
+          VALIDATE_GITLEAKS: true
+          VALIDATE_MARKDOWN: true
+          VALIDATE_NATURAL_LANGUAGE: true
+          CREATE_LOG_FILE: true
+          SUPPRESS_POSSUM: false
+          ERROR_ON_MISSING_EXEC_BIT: true
+          VALIDATE_ALL_CODEBASE: true
+          DEFAULT_BRANCH: master
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Upload test results
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: Super-Linter results
+          path: super-linter.log
