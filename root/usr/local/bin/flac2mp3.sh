@@ -822,7 +822,7 @@ for flac2mp3_track in $flac2mp3_tracks; do
         esac
       done
       # shellcheck disable=SC2090
-      [ $flac2mp3_debug -ge 1 ] && echo "Debug|New metadata: $(echo $flac2mp3_ffmpeg_metadata | sed -e 's/-metadata //g')" | log
+      [ $flac2mp3_debug -ge 1 ] && echo "Debug|New metadata: echo ${flac2mp3_ffmpeg_metadata//-metadata /}" | log
     else
       echo "Warn|ffprobe did not return any data when querying track: \"$flac2mp3_track\"" | log
       flac2mp3_exitstatus=12
