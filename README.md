@@ -75,20 +75,18 @@ Development Container info:
 
    This will use the defaults to create a 320Kbps MP3 file.
 
-   *For any other setting, you **must** use one of the supported methods to pass arguments to the script.  See the [Syntax](./README.md#syntax) section below.*
+   *For any other setting, you **must** use one of the supported methods to pass arguments to the script.  See the [Command-Line Syntax](./README.md#command-line-syntax) section below.*
 
-## Usage
+# Usage
 New file(s) will be placed in the same directory as the original FLAC file(s) (unless redirected with the `--output` option below) and have the same owner and permissions. Existing files with the same track name will be overwritten.
 
 By default, if you've configured Lidarr's **Recycle Bin** path correctly, the original audio file will be moved there.  
 ![danger] **NOTE:** If you have *not* configured the Recycle Bin, the original FLAC audio file(s) will be deleted and permanently lost.  This behavior may be modified with the `--keep-file` option.
 
-### Syntax
+## Command-Line Syntax
 >**Note:** The *Arguments* field for Custom Scripts was removed in Lidarr release [v0.7.0.1347](https://github.com/lidarr/Lidarr/commit/b9d240924f8965ebb2c5e307e36b810ae076101e "Lidarr commit notes") due to security concerns.
 
-To supply arguments to the script, you **must** either use one of the **[included wrapper scripts](./README.md#included-wrapper-scripts)**, create a **[custom wrapper script](./README.md#example-wrapper-script)**, or set the `FLAC2MP3_ARGS` **[environment variable](./README.md#environment-variable)**.
-
-#### Command-Line Options and Arguments
+### Options and Arguments
 The script may be called with optional command-line arguments.
 
 The syntax for the command-line is:  
@@ -142,7 +140,7 @@ For example, to convert all audio files to AAC audio files, use the following op
 
 Regular expression syntax is beyond the scope of this document.  See this [tutorial](https://www.regular-expressions.info/tutorial.html "Regular Expressions Tutorial") for more information. Regular expression patterns may be tested [here](http://regexstorm.net/tester "regex tester").
 
-### Examples
+## Examples
 
 ```shell
 -b 320k        # Output 320 kbit/s MP3 (non-VBR; same as default behavior)
@@ -162,7 +160,10 @@ Regular expression syntax is beyond the scope of this document.  See this [tutor
                # Place the converted file(s) in the specified directory and do not delete the original audio file(s)
 ```
 
-#### Included Wrapper Scripts
+## Wrapper Scripts
+To supply arguments to the script, you must either use one of the included wrapper scripts, create a custom wrapper script, or set the `FLAC2MP3_ARGS` [environment variable](./README.md#environment-variable).
+
+### Included Wrapper Scripts
 For your convenience, several wrapper scripts are included in the `/usr/local/bin/` directory.  
 You may use any of these scripts in place of the `flac2mp3.sh` mentioned in the [Installation](./README.md#installation) section above.
 
@@ -174,7 +175,7 @@ flac2opus.sh             # Convert to Opus format using .opus extension, 192 kbi
 flac2alac.sh             # Convert to Apple Lossless using an .m4a extension
 ```
 
-#### Example Wrapper Script
+### Example Wrapper Script
 To configure an entry from the [Examples](./README.md#examples) section above, create and save a file called `flac2mp3-custom.sh` to `/config` containing the following text:
 
 ```shell
@@ -193,7 +194,7 @@ Then put `/config/flac2mp3-custom.sh` in the **Path** field in place of `/usr/lo
 
 >**Note:** If you followed the Linuxserver.io recommendations when configuring your container, the `/config` directory will be mapped to an external storage location.  It is therefore recommended to place custom scripts in the `/config` directory so they will survive container updates, but they may be placed anywhere that is accessible by Lidarr.
 
-### Environment Variable
+## Environment Variable
 The `flac2mp3.sh` script also allows the use of arguments provided by the `FLAC2MP3_ARGS` environment variable. This allows advanced use cases without having to provide a custom script.
 
 For example, the following value in your `docker run` command would convert any .mp3 to Opus:
@@ -215,39 +216,29 @@ environment:
 
 >**NOTE:** The environment variable settings are *only* used when **no** command-line arguments are present. **Any** command-line argument will disable the use of the environment variable.
 
-### Triggers
+## Triggers
 The only events/notification triggers that are supported are **On Release Import** and **On Upgrade**
 
-### Batch Mode
+## Batch Mode
 Batch mode allows the script to be executed independently of Lidarr.  It converts the file specified on the command-line and ignores any environment variables that are normally expected to be set by the music management program.
 
 Using this function, you can easily process all of your audio files in any subdirectory at once.  See the [Batch Example](./README.md#batch-example) below.
 
-#### Script Execution Differences in Batch Mode
+### Script Execution Differences in Batch Mode
 Because the script is not called from within Lidarr, expect the following behavior while in Batch Mode:
 * *The filename must be specified on the command-line*<br/>(The `-f` option places the script in Batch Mode)
 * *Lidarr APIs are not called and its database is not updated.*<br/>This may require a manual import of converted music files or an artist rescan.
 * *Original audio files are deleted.*<br/>The Recycle Bin function is not available. (Modifiable using the `-k` option.)
 
-#### Batch Example
+### Batch Example
 To convert all .FLAC files in the `/music` directory to Apple Lossless Audio Codec (ALAC), enter the following at the Linux command-line:
 
 ```shell
 find /music/ -type f -name "*.flac" | while read file; do /usr/local/bin/flac2mp3.sh -f "$file" -a "-c:a alac" -e m4a; done
 ```
 
-### Logs
-By default, a log file is created for the script activity called:
-
-`/config/logs/flac2mp3.txt`
-
-This log can be downloaded from Lidarr under *System* > *Log Files*.  The log filename can be modified with the `--log` command-line option.
-
-Log rotation is performed, with 5 log files of 1MB each kept, matching Lidarr's log retention.
->![danger] **NOTE:** If debug logging is enabled with a level above 1, the log file can grow very large very quickly and is much more likely to be rotated.  *Do not leave high-level debug logging enabled permanently.*
-
-#### Metadata Corrections
-This feature is not meant for general purpose use. It is only documented here for completeness.
+## Metadata Corrections
+**This feature is not meant for general purpose use.** It is only documented here for completeness.
 
 List of supported tags and metadata corrections that are applied:
 
@@ -261,6 +252,16 @@ List of supported tags and metadata corrections that are applied:
 | |/Electronic/|"Electronica & Dance"
 | |/Punk\|Alternative/|"Alternative & Punk"
 | |/Rock/|"Rock"
+
+## Logs
+By default, a log file is created for the script activity called:
+
+`/config/logs/flac2mp3.txt`
+
+This log can be downloaded from Lidarr under *System* > *Log Files*.  The log filename can be modified with the `--log` command-line option.
+
+Log rotation is performed, with 5 log files of 1MB each kept, matching Lidarr's log retention.
+>![danger] **NOTE:** If debug logging is enabled with a level above 1, the log file can grow very large very quickly and is much more likely to be rotated.  *Do not leave high-level debug logging enabled permanently.*
 
 # Uninstall
 To completely remove the mod:
