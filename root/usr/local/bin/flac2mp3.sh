@@ -786,6 +786,7 @@ for flac2mp3_track in $flac2mp3_tracks; do
     # Get track metadata
     if ffprobe "$flac2mp3_track"; then
       for flac2mp3_tag in $(echo $flac2mp3_tags | tr ',' '|'); do
+        # shellcheck disable=SC2089
         case "$flac2mp3_tag" in
           title )  # Fix for parenthesis in titles for live and mix names
             flac2mp3_tag_title=$(echo "$flac2mp3_ffprobe_json" | jq -crM '.format.tags | to_entries[] | select(.key | match("title"; "i")).value')
@@ -814,7 +815,6 @@ for flac2mp3_track in $flac2mp3_tracks; do
                 *Industrial*) flac2mp3_ffmpeg_metadata+='-metadata genre="Industrial Rock" ' ;;
                 *Electronic*) flac2mp3_ffmpeg_metadata+='-metadata genre="Electronica & Dance" ' ;;
                 *Punk*|*Alternative*) flac2mp3_ffmpeg_metadata+='-metadata genre="Alternative & Punk" ' ;;
-                # shellcheck disable=SC2089
                 *Rock*) flac2mp3_ffmpeg_metadata+='-metadata genre="Rock" ' ;;
               esac
             fi
