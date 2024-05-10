@@ -24,7 +24,7 @@ Development Container info:
       - Dev/test release: `DOCKER_MODS=thecaptain989/lidarr-flac2mp3:latest`
 
       *Example Docker Compose YAML Configuration*  
-      
+
       ```yaml
       version: "2.1"
       services:
@@ -46,7 +46,7 @@ Development Container info:
       ```  
 
       *Example Docker Run Command*  
-       
+
        ```shell
        docker run -d \
          --name=lidarr \
@@ -119,12 +119,16 @@ The `-a` option effectively makes the script a generic wrapper for ffmpeg.  FFmp
 
 The exact format of the executed ffmpeg command is:
 
-```
+```shell
 ffmpeg -loglevel error -nostdin -i "input.flac" ${options} "output.${extension}"
 ```
 
 #### Technical notes on regular expressions
+<!-- textlint-disable terminology -->
+
 By default, the script only matches and interacts with FLAC files (specifically, files ending in ".flac"). The `-r` option allows the script to match on a user specified regular expression (i.e. "regex") pattern.
+
+<!-- textlint-enable -->
 
 Files are passed to the script with the full Linux path intact. (Ex: `/path/to/audio/a-ha/Hunting High and Low/01 Take on Me.mp3`).  Craft your regular expression with this in mind.
 
