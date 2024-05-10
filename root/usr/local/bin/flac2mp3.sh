@@ -63,6 +63,9 @@ Source: https://github.com/TheCaptain989/lidarr-flac2mp3
 Usage:
   $0 [{-b|--bitrate} <bitrate> | {-v|--quality} <quality> | {-a|--advanced} \"<options>\" {-e|--extension} <extension>] [{-f|--file} <audio_file>] [{-k|--keep-file}] [{-o|--output} <directory>] [{-r|--regex} '<regex>'] [{-t|--tags} <taglist>] [{-l|--log} <log_file>] [{-d|--debug} [<level>]]
 
+  Options can also be set via the FLAC2MP3_ARGS environment variable.
+  Command-line arguments override the environment variable.
+
 Options:
   -b, --bitrate <bitrate>       Set output quality in constant bits per second
                                 [default: 320k]
@@ -326,7 +329,7 @@ elif [[ "${flac2mp3_type,,}" = "lidarr" ]]; then
   [ -z "$flac2mp3_tracks" ] && flac2mp3_tracks="$lidarr_trackfile_path"
 else
   # Called in an unexpected way
-  echo -e "Error|Unknown or missing 'lidarr_eventtype' environment variable: ${flac2mp3_type}\nNot called from Lidarr.\nTry using Batch Mode option: -f <file>"
+  echo -e "Error|Unknown or missing '*_eventtype' environment variable: ${flac2mp3_type}\nNot called from Lidarr.\nTry using Batch Mode option: -f <file>"
   exit 7
 fi
 
@@ -599,6 +602,14 @@ fi
 
 # Log environment
 [ $flac2mp3_debug -ge 2 ] && printenv | sort | sed 's/^/Debug|/' | log
+
+# Check for invalid _eventtypes
+if [[ "Grab|Rename|TrackRetag|HealthIssue" =~ ${lidarr_eventtype} ]]; then
+  flac2mp3_message="Error|Lidarr event ${lidarr_eventtype} is not supported. Exiting."
+  echo "$flac2mp3_message" | log
+  echo "$flac2mp3_message" >&2
+  end_script 20
+fi
 
 # Handle Lidarr Test event
 if [[ "$lidarr_eventtype" = "Test" ]]; then
