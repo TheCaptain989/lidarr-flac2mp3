@@ -852,7 +852,7 @@ for flac2mp3_track in $flac2mp3_tracks; do
   fi
 
   # Checking that we're running as root
-  if [ $(id -u) -eq 0 ]; then
+  if [ "$(id -u)" -eq 0 ]; then
     # Set owner and permissions
     [ $flac2mp3_debug -ge 1 ] && echo "Debug|Changing ownership and permissions of \"$flac2mp3_newTrack\"" | log
     chown --reference="$flac2mp3_track" "$flac2mp3_newTrack" >&2
