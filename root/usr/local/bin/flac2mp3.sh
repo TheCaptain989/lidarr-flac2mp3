@@ -855,14 +855,14 @@ for flac2mp3_track in $flac2mp3_tracks; do
   if [ $(id -u) -eq 0 ]; then
     # Set owner and permissions
     [ $flac2mp3_debug -ge 1 ] && echo "Debug|Changing ownership and permissions of \"$flac2mp3_newTrack\"" | log
-    chown --quiet --reference="$flac2mp3_track" "$flac2mp3_newTrack" >&2
+    chown --reference="$flac2mp3_track" "$flac2mp3_newTrack" >&2
     flac2mp3_return=$?; [ $flac2mp3_return -ne 0 ] && {
       flac2mp3_message="Error|[$flac2mp3_return] Error when changing ownership of track: \"$flac2mp3_newTrack\""
       echo "$flac2mp3_message" | log
       echo "$flac2mp3_message" >&2
       flac2mp3_exitstatus=15
     }
-    chmod --quiet --reference="$flac2mp3_track" "$flac2mp3_newTrack" >&2
+    chmod --reference="$flac2mp3_track" "$flac2mp3_newTrack" >&2
     flac2mp3_return=$?; [ $flac2mp3_return -ne 0 ] && {
       flac2mp3_message="Error|[$flac2mp3_return] Error when changing permissions of track: \"$flac2mp3_newTrack\""
       echo "$flac2mp3_message" | log
