@@ -78,7 +78,7 @@ Development Container info:
    *For any other setting, you **must** use one of the supported methods to pass arguments to the script.  See the [Command-Line Syntax](./README.md#command-line-syntax) section below.*
 
 # Usage
-New file(s) will be placed in the same directory as the original FLAC file(s) (unless redirected with the `--output` option below). Existing files with the same track name will be overwritten. Owner and permissions are preserved if the script is executed as root.
+New file(s) will be placed in the same directory as the original FLAC file(s) (unless redirected with the `--output` option below) with permissions preserved. Existing files with the same track name will be overwritten. Owner is preserved if the script is executed as root.
 
 By default, if you've configured Lidarr's **Recycle Bin** path correctly, the original audio file will be moved there.  
 ![danger] **NOTE:** If you have *not* configured the Recycle Bin, the original FLAC audio file(s) will be deleted and permanently lost.  This behavior may be modified with the `--keep-file` option.
