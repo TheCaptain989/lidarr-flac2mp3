@@ -609,7 +609,7 @@ fi
 [ $flac2mp3_debug -ge 2 ] && printenv | sort | sed 's/^/Debug|/' | log
 
 # Check for invalid _eventtypes
-if [[ "Grab|Rename|TrackRetag|HealthIssue" =~ ${lidarr_eventtype} ]]; then
+if [[ "Grab|Rename|TrackRetag|ArtistAdd|ArtistDelete|AlbumDelete|ApplicationUpdate|HealthIssue" =~ ${lidarr_eventtype} ]]; then
   flac2mp3_message="Error|Lidarr event ${lidarr_eventtype} is not supported. Exiting."
   echo "$flac2mp3_message" | log
   echo "$flac2mp3_message" >&2
