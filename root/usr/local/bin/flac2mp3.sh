@@ -605,7 +605,8 @@ if [ -n "$flac2mp3_prelogmessage" ]; then
   [ $flac2mp3_debug -ge 1 ] && echo "Debug|FLAC2MP3_ARGS: ${FLAC2MP3_ARGS}" | log
 fi
 
-# Log environment
+# Log environment and user
+[ $flac2mp3_debug -ge 2 ] && id | sed 's/^/Debug|Running as: /' | log
 [ $flac2mp3_debug -ge 2 ] && printenv | sort | sed 's/^/Debug|/' | log
 
 # Check for invalid _eventtypes
@@ -852,14 +853,26 @@ for flac2mp3_track in $flac2mp3_tracks; do
 
   # Set owner and permissions
   [ $flac2mp3_debug -ge 1 ] && echo "Debug|Changing ownership and permissions of \"$flac2mp3_newTrack\"" | log
-  chown --reference="$flac2mp3_track" "$flac2mp3_newTrack" >&2
-  chmod --reference="$flac2mp3_track" "$flac2mp3_newTrack" >&2
-  flac2mp3_return=$?; [ $flac2mp3_return -ne 0 ] && {
-    flac2mp3_message="Error|[$flac2mp3_return] Error when changing ownership or permissions of track: \"$flac2mp3_newTrack\""
-    echo "$flac2mp3_message" | log
-    echo "$flac2mp3_message" >&2
-    flac2mp3_exitstatus=15
-  }
+  # Checking that we're running as root
+  if [ $(id -u) -eq 0 ]; then
+    chown --quiet --reference="$flac2mp3_track" "$flac2mp3_newTrack" >&2
+    flac2mp3_return=$?; [ $flac2mp3_return -ne 0 ] && {
+      flac2mp3_message="Error|[$flac2mp3_return] Error when changing ownership of track: \"$flac2mp3_newTrack\""
+      echo "$flac2mp3_message" | log
+      echo "$flac2mp3_message" >&2
+      flac2mp3_exitstatus=15
+    }
+    chmod --quiet --reference="$flac2mp3_track" "$flac2mp3_newTrack" >&2
+    flac2mp3_return=$?; [ $flac2mp3_return -ne 0 ] && {
+      flac2mp3_message="Error|[$flac2mp3_return] Error when changing permissions of track: \"$flac2mp3_newTrack\""
+      echo "$flac2mp3_message" | log
+      echo "$flac2mp3_message" >&2
+      flac2mp3_exitstatus=15
+    }
+  else
+    # Unable to change ownership or permissions when not running as root
+    [ $flac2mp3_debug -ge 1 ] && echo "Debug|Unable to change track file because we're running as user '$(id -un)'" | log
+  fi
 
   # Do not delete the source file if asked. Skip import.
   if [ $flac2mp3_keep -eq 1 ]; then
