@@ -851,10 +851,10 @@ for flac2mp3_track in $flac2mp3_tracks; do
     continue
   fi
 
-  # Set owner and permissions
-  [ $flac2mp3_debug -ge 1 ] && echo "Debug|Changing ownership and permissions of \"$flac2mp3_newTrack\"" | log
   # Checking that we're running as root
   if [ $(id -u) -eq 0 ]; then
+    # Set owner and permissions
+    [ $flac2mp3_debug -ge 1 ] && echo "Debug|Changing ownership and permissions of \"$flac2mp3_newTrack\"" | log
     chown --quiet --reference="$flac2mp3_track" "$flac2mp3_newTrack" >&2
     flac2mp3_return=$?; [ $flac2mp3_return -ne 0 ] && {
       flac2mp3_message="Error|[$flac2mp3_return] Error when changing ownership of track: \"$flac2mp3_newTrack\""
@@ -871,7 +871,7 @@ for flac2mp3_track in $flac2mp3_tracks; do
     }
   else
     # Unable to change ownership or permissions when not running as root
-    [ $flac2mp3_debug -ge 1 ] && echo "Debug|Unable to change track file because we're running as user '$(id -un)'" | log
+    [ $flac2mp3_debug -ge 1 ] && echo "Debug|Unable to change ownership or permissions because we're running as user '$(id -un)'" | log
   fi
 
   # Do not delete the source file if asked. Skip import.
