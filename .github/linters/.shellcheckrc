@@ -1,0 +1,14 @@
+# ShellCheck global configuration
+source-path=SCRIPTDIR
+
+# Invalid source location
+disable=SC1090,SC1091
+
+# Double quote to prevent globbing and word splitting
+disable=SC2086
+
+# Declare and assign separately to avoid masking return values
+disable=SC2155
+
+# Prefer [ p ] && [ q ] as [ p -a q ] is not well defined
+disable=SC2166
