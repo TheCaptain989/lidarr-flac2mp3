@@ -864,7 +864,7 @@ for flac2mp3_track in $flac2mp3_tracks; do
     }
   else
     # Unable to change owner when not running as root
-    [ $flac2mp3_debug -ge 1 ] && echo "Debug|Unable to change owner of file because we're running as user '$(id -un)'" | log
+    [ $flac2mp3_debug -ge 1 ] && echo "Debug|Unable to change owner of track when running as user '$(id -un)'" | log
   fi
   # Set permissions
   chmod --reference="$flac2mp3_track" "$flac2mp3_newTrack" >&2
