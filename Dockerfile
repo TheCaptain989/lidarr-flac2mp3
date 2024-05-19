@@ -1,11 +1,14 @@
 # syntax=docker/dockerfile:1
 
+## Buildstage ##
 FROM ghcr.io/linuxserver/baseimage-alpine:3.19 as buildstage
 
 ARG MOD_VERSION
 
+# copy local files
 COPY root/ /root-layer/
 
+# Add version to script
 RUN \
   MOD_VERSION="${MOD_VERSION:-unknown}" && \
   sed -i -e "s/{{VERSION}}/$MOD_VERSION/" \
@@ -20,5 +23,5 @@ LABEL org.opencontainers.image.description="A Docker Mod to Lidarr to automatica
 LABEL org.opencontainers.image.licenses=GPL-3.0-only
 LABEL org.opencontainers.image.authors="TheCaptain989"
 
-# Copy local files
+# Add files from buildstage
 COPY --from=buildstage /root-layer/ /
