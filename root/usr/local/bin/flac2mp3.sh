@@ -634,11 +634,6 @@ fi
 # Check for config file
 if [ "$flac2mp3_type" = "batch" ]; then
   [ $flac2mp3_debug -ge 1 ] && echo "Debug|Not using config file in batch mode." | log
-# TODO: Allow use of new environment variables from https://github.com/Lidarr/Lidarr/pull/4812
-#   LIDARR__SERVER__PORT
-#   LIDARR__SERVER__URLBASE
-#   LIDARR__SERVER__BINDADDRESS
-#   LIDARR__AUTH__APIKEY
 elif [ -f "$flac2mp3_config" ]; then
   # Read Lidarr config.xml
   [ $flac2mp3_debug -ge 1 ] && echo "Debug|Reading from Lidarr config file '$flac2mp3_config'" | log
@@ -648,6 +643,12 @@ elif [ -f "$flac2mp3_config" ]; then
     [[ $flac2mp3_xml_entity = "BindAddress" ]] && flac2mp3_bindaddress=$flac2mp3_xml_content
     [[ $flac2mp3_xml_entity = "ApiKey" ]] && flac2mp3_apikey=$flac2mp3_xml_content
   done < $flac2mp3_config
+
+  # Allow use of environment variables from https://github.com/Lidarr/Lidarr/pull/4812
+  [ -n "${LIDARR__SERVER__PORT}" ] && flac2mp3_port="${!flac2mp3_port_var}"
+  [ -n "${LIDARR__SERVER__URLBASE}" ] && flac2mp3_urlbase="${!flac2mp3_urlbase_var}"
+  [ -n "${LIDARR__SERVER__BINDADDRESS}" ] && flac2mp3_bindaddress="${!flac2mp3_bindaddress_var}"
+  [ -n "${LIDARR__AUTH__APIKEY}" ] && flac2mp3_apikey="${!flac2mp3_apikey_var}"
 
   # Check for localhost
   [[ $flac2mp3_bindaddress = "*" ]] && flac2mp3_bindaddress=localhost
