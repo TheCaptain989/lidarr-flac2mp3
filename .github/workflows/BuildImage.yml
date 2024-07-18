@@ -1,38 +1,52 @@
 name: Build Image
 
-on: [push, pull_request_target, workflow_dispatch]
+on: [push, workflow_dispatch]
 
 env:
   ENDPOINT: "thecaptain989/lidarr-flac2mp3"
 
 jobs:
   build:
+    name: Build Job
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+            fetch-depth: 0  # Needed for semantic_version to work correctly
+
+      - name: Incrementing version
+        id: semantic_version
+        uses: paulhatch/semantic-version@v5.4.0
+        with:
+            search_commit_body: true
 
       - name: Set Vars
         run: |
           echo "ENDPOINT=${ENDPOINT}" >> $GITHUB_STEP_SUMMARY
           # **** If the mod needs to be versioned, set the versioning logic below. Otherwise leave as is. ****
-          MOD_VERSION=${GITHUB_SHA:0:7}
+          MOD_VERSION="${{ steps.semantic_version.outputs.version }}+${GITHUB_SHA:0:7}"
           echo "MOD_VERSION=${MOD_VERSION}" >> $GITHUB_ENV
           echo "MOD_VERSION=${MOD_VERSION}" >> $GITHUB_STEP_SUMMARY
 
       - name: Build image
         run: |
-          docker buildx build --no-cache --build-arg MOD_VERSION=${MOD_VERSION} --tag ${ENDPOINT}:${{ github.sha }} .
+          docker buildx build --no-cache --build-arg MOD_VERSION="${MOD_VERSION}" --tag ${ENDPOINT}:${{ github.sha }} .
 
       - name: Tag image
         run: |
-          if [[ '${{ github.ref_name }}' == 'master' ]]; then
+          if [[ "${{ github.ref_name }}" == 'master' ]]; then
             IMAGETAG=${ENDPOINT}:latest
           else
             IMAGETAG="${ENDPOINT}:${{ github.ref_name }}"
           fi
+          IMAGEVERTAG="${ENDPOINT}:${{ steps.semantic_version.outputs.version_tag }}"
           echo "IMAGETAG=${IMAGETAG}" >> $GITHUB_ENV
+          echo "IMAGEVERTAG=${IMAGEVERTAG}" >> $GITHUB_ENV
           docker tag ${ENDPOINT}:${{ github.sha }} "${IMAGETAG}"
+          docker tag ${ENDPOINT}:${{ github.sha }} "${IMAGEVERTAG}"
           docker tag ${ENDPOINT}:${{ github.sha }} ghcr.io/${ENDPOINT}:${{ github.sha }}
+          docker tag ${ENDPOINT}:${{ github.sha }} ghcr.io/"${IMAGEVERTAG}"
           docker tag ${ENDPOINT}:${{ github.sha }} ghcr.io/"${IMAGETAG}"
 
       - name: Credential check
@@ -58,9 +72,11 @@ jobs:
         run: |
           docker push ghcr.io/${ENDPOINT}:${{ github.sha }}
           docker push ghcr.io/"${IMAGETAG}"
+          docker push ghcr.io/"${IMAGEVERTAG}"
           echo "Pushed the following images/tags to GHCR:" >> $GITHUB_STEP_SUMMARY
           echo "ghcr.io/${ENDPOINT}:${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
           echo "ghcr.io/${IMAGETAG}" >> $GITHUB_STEP_SUMMARY
+          echo "ghcr.io/${IMAGEVERTAG}" >> $GITHUB_STEP_SUMMARY
 
       - name: Login to DockerHub
         if: ${{ env.DOCKERUSER && env.DOCKERPASS }}
@@ -71,8 +87,9 @@ jobs:
         if: ${{ env.DOCKERUSER && env.DOCKERPASS }}
         run: |
           docker push ${ENDPOINT}:${{ github.sha }}
+          docker push "${IMAGEVERTAG}"
           docker push "${IMAGETAG}"
           echo "Pushed the following images/tags to Docker Hub:" >> $GITHUB_STEP_SUMMARY
           echo "${ENDPOINT}:${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
           echo "${IMAGETAG}" >> $GITHUB_STEP_SUMMARY
-          
+          echo "${IMAGEVERTAG}" >> $GITHUB_STEP_SUMMARY
