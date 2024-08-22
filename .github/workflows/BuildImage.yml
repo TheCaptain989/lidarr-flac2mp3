@@ -51,11 +51,11 @@ jobs:
 
       - name: Credential check
         run: |
-          echo "CR_USER=${{ secrets.CR_USER }}" >> $GITHUB_ENV
+          echo "CR_USER=${{ vars.CR_USER }}" >> $GITHUB_ENV
           echo "CR_PAT=${{ secrets.CR_PAT }}" >> $GITHUB_ENV
-          echo "DOCKERUSER=${{ secrets.DOCKERUSER }}" >> $GITHUB_ENV
+          echo "DOCKERUSER=${{ vars.DOCKERUSER }}" >> $GITHUB_ENV
           echo "DOCKERPASS=${{ secrets.DOCKERPASS }}" >> $GITHUB_ENV
-          if [[ "${{ secrets.CR_USER }}" == "" && "${{ secrets.CR_PAT }}" == "" && "${{ secrets.DOCKERUSER }}" == "" && "${{ secrets.DOCKERPASS }}" == "" ]]; then
+          if [[ "${{ vars.CR_USER }}" == "" && "${{ secrets.CR_PAT }}" == "" && "${{ vars.DOCKERUSER }}" == "" && "${{ secrets.DOCKERPASS }}" == "" ]]; then
             echo "::error::Push credential secrets missing."
             echo "::error::You must set either CR_USER & CR_PAT or DOCKERUSER & DOCKERPASS as secrets in your repo settings."
             echo "::error::See https://github.com/linuxserver/docker-mods/blob/master/README.md for more information/instructions."
@@ -65,7 +65,7 @@ jobs:
       - name: Login to GitHub Container Registry
         if: ${{ env.CR_USER && env.CR_PAT }}
         run: |
-          echo "${{ secrets.CR_PAT }}" | docker login ghcr.io -u ${{ secrets.CR_USER }} --password-stdin
+          echo "${{ secrets.CR_PAT }}" | docker login ghcr.io -u ${{ vars.CR_USER }} --password-stdin
 
       - name: Push tags to GitHub Container Registry
         if: ${{ env.CR_USER && env.CR_PAT }}
@@ -81,7 +81,7 @@ jobs:
       - name: Login to DockerHub
         if: ${{ env.DOCKERUSER && env.DOCKERPASS }}
         run: |
-          echo "${{ secrets.DOCKERPASS }}" | docker login -u "${{ secrets.DOCKERUSER }}" --password-stdin
+          echo "${{ secrets.DOCKERPASS }}" | docker login -u "${{ vars.DOCKERUSER }}" --password-stdin
 
       - name: Push tags to DockerHub
         if: ${{ env.DOCKERUSER && env.DOCKERPASS }}
