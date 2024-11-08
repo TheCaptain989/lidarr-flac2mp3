@@ -6,8 +6,44 @@ env:
   ENDPOINT: "thecaptain989/lidarr-flac2mp3"
 
 jobs:
+  lint:
+    name: Lint Job
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+      statuses: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          # Full git history is needed to get a proper list of changed files within `super-linter`
+          fetch-depth: 0
+
+      - name: Lint Code Base
+        uses: super-linter/super-linter/slim@v7
+        env:
+          VALIDATE_BASH: true
+          BASH_SEVERITY: style
+          BASH_FILE_NAME: .shellcheckrc
+          # Adding this here for now becaue the config file does not work
+          # SHELLCHECK_OPTS: '--exclude SC1090,SC1091,SC2086,SC2155,SC2166'
+          # Maybe fixed in v7?
+          VALIDATE_BASH_EXEC: true
+          VALIDATE_DOCKERFILE_HADOLINT: true
+          VALIDATE_GITLEAKS: true
+          VALIDATE_MARKDOWN: true
+          VALIDATE_NATURAL_LANGUAGE: true
+          CREATE_LOG_FILE: true
+          SUPPRESS_POSSUM: false
+          ERROR_ON_MISSING_EXEC_BIT: true
+          VALIDATE_ALL_CODEBASE: true
+          DEFAULT_BRANCH: master
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   build:
     name: Build Job
+    needs: lint
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
