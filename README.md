@@ -275,16 +275,16 @@ find /music/ -type f -name "*.flac" | while read file; do /usr/local/bin/flac2mp
 
 List of supported tags and metadata corrections that are applied:
 
-|Tag|Original|Correction
-|---|---|---
-|title|Parenthesis for live\|remix, etc. "()"|Square brackets "\[]"
-|disc|1|1/1
-|genre|/Pop/|"Pop"
-| |/Indie/|"Alternative & Indie"
-| |/Industrial/|"Industrial Rock"
-| |/Electronic/|"Electronica & Dance"
-| |/Punk\|Alternative/|"Alternative & Punk"
-| |/Rock/|"Rock"
+Tag|Original|Correction
+---|---|---
+title|Parenthesis for live\|remix, etc. "()"|Square brackets "\[]"
+disc|1|1/1
+genre|/Pop/|"Pop"
+&nbsp;|/Indie/|"Alternative & Indie"
+&nbsp;|/Industrial/|"Industrial Rock"
+&nbsp;|/Electronic/|"Electronica & Dance"
+&nbsp;|/Punk\|Alternative/|"Alternative & Punk"
+&nbsp;|/Rock/|"Rock"
 
 </details>
 
