@@ -102,7 +102,7 @@ New file(s) will be placed in the same directory as the original FLAC file(s) (u
 > If you have *not* configured the Recycle Bin, the original FLAC audio file(s) will be deleted and permanently lost.  This behavior may be modified with the `--keep-file` option.
 
 ## Command-Line Syntax
-> ![NOTE]
+> [!NOTE]
 > The *Arguments* field for Custom Scripts was removed in Lidarr release [v0.7.0.1347](https://github.com/lidarr/Lidarr/commit/b9d240924f8965ebb2c5e307e36b810ae076101e "Lidarr commit notes") due to security concerns.
 
 ### Options and Arguments
