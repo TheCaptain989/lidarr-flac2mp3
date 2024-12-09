@@ -297,6 +297,7 @@ Because the script is not called from within Lidarr, expect the following behavi
 ### Batch Example
 <details>
 <summary>Batch Mode Example</summary>
+
 To convert all .FLAC files in the `/music` directory to Apple Lossless Audio Codec (ALAC), enter the following at the Linux command-line:
 
 ```shell
