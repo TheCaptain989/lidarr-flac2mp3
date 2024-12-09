@@ -137,6 +137,7 @@ If neither `-b`, `-v`, `-a`, or `-e` options are specified, the script will defa
 #### Technical notes on advanced options
 <details>
 <summary>Advanced Options Details</summary>
+
 The `-a` option effectively makes the script a generic wrapper for ffmpeg.  FFmpeg is executed once per track with only the loglevel, input filename, and output filename being set.  All other options are passed unparsed to the command-line.  
 
 The exact format of the executed ffmpeg command is:
