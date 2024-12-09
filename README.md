@@ -151,6 +151,7 @@ ffmpeg -loglevel error -nostdin -i "input.flac" ${options} "output.${extension}"
 #### Technical notes on regular expressions
 <details>
 <summary>Regular Expression Details</summary>
+
 <!-- textlint-disable terminology -->
 
 By default, the script only matches and interacts with FLAC files (specifically, files ending in ".flac"). The `-r` option allows the script to match on a user specified regular expression (i.e. "regex") pattern.
@@ -223,6 +224,7 @@ flac2alac.sh             # Convert to Apple Lossless using an .m4a extension
 ### Example Wrapper Script
 <details>
 <summary>Example Script</summary>
+
 To configure an entry from the [Examples](./README.md#examples) section above, create and save a file called `flac2mp3-custom.sh` to `/config` containing the following text:
 
 ```shell
