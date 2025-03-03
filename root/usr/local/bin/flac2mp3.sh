@@ -110,7 +110,7 @@ Options:
                                 [default: \.flac$]
   -t, --tags <taglist>          Comma separated list of metadata tags to apply
                                 automated corrections to.
-                                Supports: disc, genre
+                                Supports: title, disc, genre
   -l, --log <log_file>          log filename
                                 [default: /config/log/flac2mp3.txt]
   -d, --debug [<level>]         Enable debug logging
@@ -539,11 +539,12 @@ function import_tracks {
 }
 # Get track media info from ffprobe
 function ffprobe {
-  [ $flac2mp3_debug -ge 2 ] && echo "Debug|Executing: /usr/bin/ffprobe -hide_banner -loglevel $flac2mp3_ffmpeg_log -print_format json=compact=1 -show_format -show_entries \"format=tags : format_tags=title,disc,genre\" -i \"$1\"" | log
+  local flac2mp3_ffcommand="/usr/bin/ffprobe -hide_banner -loglevel $flac2mp3_ffmpeg_log -print_format json=compact=1 -show_format -show_entries \"format=tags : format_tags=title,disc,genre\" -i \"$1\""
+  [ $flac2mp3_debug -ge 1 ] && echo "Debug|Executing: $flac2mp3_ffcommand" | log
   unset flac2mp3_ffprobe_json
-  flac2mp3_ffprobe_json=$(/usr/bin/ffprobe -hide_banner -loglevel $flac2mp3_ffmpeg_log -print_format json=compact=1 -show_format -show_entries "format=tags : format_tags=title,disc,genre" -i "$1")
+  flac2mp3_ffprobe_json=$(eval $flac2mp3_ffcommand 2>&1)
   flac2mp3_return=$?; [ $flac2mp3_return -ne 0 ] && {
-    flac2mp3_message="Error|[$flac2mp3_return] ffprobe error when inspecting track: \"$1\""
+    flac2mp3_message=$(echo -e "[$flac2mp3_return] ffprobe error when inspecting file: \"$1\"\nffprobe returned: $flac2mp3_ffprobe_json" | awk '{print "Error|"$0}')
     echo "$flac2mp3_message" | log
     echo "$flac2mp3_message" >&2
   }
@@ -833,7 +834,7 @@ for flac2mp3_track in $flac2mp3_tracks; do
         esac
       done
       # shellcheck disable=SC2090
-      [ $flac2mp3_debug -ge 1 ] && echo "Debug|New metadata: echo ${flac2mp3_ffmpeg_metadata//-metadata /}" | log
+      [ $flac2mp3_debug -ge 1 ] && echo "Debug|New metadata: ${flac2mp3_ffmpeg_metadata//-metadata /}" | log
     else
       echo "Warn|ffprobe did not return any data when querying track: \"$flac2mp3_track\"" | log
       flac2mp3_exitstatus=12
@@ -842,10 +843,11 @@ for flac2mp3_track in $flac2mp3_tracks; do
   
   # Convert the track
   echo "Info|Writing: $flac2mp3_newTrack" | log
-  [ $flac2mp3_debug -ge 1 ] && echo "Debug|Executing: nice /usr/bin/ffmpeg -loglevel $flac2mp3_ffmpeg_log -nostdin -i \"$flac2mp3_track\" $flac2mp3_ffmpeg_opts $flac2mp3_ffmpeg_metadata\"$flac2mp3_newTrack\"" | log
-  eval nice /usr/bin/ffmpeg -loglevel $flac2mp3_ffmpeg_log -nostdin -i \"$flac2mp3_track\" $flac2mp3_ffmpeg_opts $flac2mp3_ffmpeg_metadata\"$flac2mp3_newTrack\" 2>&1 | log
+  flac2mp3_ffcommand="nice /usr/bin/ffmpeg -loglevel $flac2mp3_ffmpeg_log -nostdin -i \"$flac2mp3_track\" $flac2mp3_ffmpeg_opts $flac2mp3_ffmpeg_metadata\"$flac2mp3_newTrack\""
+  [ $flac2mp3_debug -ge 1 ] && echo "Debug|Executing: $flac2mp3_ffcommand" | log
+  flac2mp3_result=$(eval $flac2mp3_ffcommand 2>&1)
   flac2mp3_return=$?; [ $flac2mp3_return -ne 0 ] && {
-    flac2mp3_message="Error|[$flac2mp3_return] ffmpeg error when converting track: \"$flac2mp3_track\" to \"$flac2mp3_newTrack\""
+    flac2mp3_message=$(echo -e "[$flac2mp3_return] ffmpeg error when converting track: \"$flac2mp3_track\" to \"$flac2mp3_newTrack\"\nffmpeg returned: $flac2mp3_result" | awk '{print "Error|"$0}')
     echo "$flac2mp3_message" | log
     echo "$flac2mp3_message" >&2
     flac2mp3_exitstatus=13
@@ -867,7 +869,6 @@ for flac2mp3_track in $flac2mp3_tracks; do
     [ $flac2mp3_debug -ge 1 ] && echo "Debug|Changing owner of file \"$flac2mp3_newTrack\"" | log
     flac2mp3_result=$(chown --reference="$flac2mp3_track" "$flac2mp3_newTrack")
     flac2mp3_return=$?; [ $flac2mp3_return -ne 0 ] && {
-      striptracks_message=$(echo -e "[$striptracks_return] Error when changing owner of file: \"$striptracks_tempvideo\"\nchown returned: $striptracks_result" | awk '{print "Error|"$0}')
       flac2mp3_message=$(echo -e "[$flac2mp3_return] Error when changing owner of file: \"$flac2mp3_newTrack\"\nchown returned: $flac2mp3_result" | awk '{print "Error|"$0}')
       echo "$flac2mp3_message" | log
       echo "$flac2mp3_message" >&2
@@ -880,7 +881,7 @@ for flac2mp3_track in $flac2mp3_tracks; do
   # Set permissions
   flac2mp3_result=$(chmod --reference="$flac2mp3_track" "$flac2mp3_newTrack")
   flac2mp3_return=$?; [ $flac2mp3_return -ne 0 ] && {
-    flac2mp3_message=$(echo -e "[$flac2mp3_return] Error when changing permissions of file: \"$flac2mp3_newTrack\"\nchmod returned: $flac2mp3_result" | awk '{print "Error|"$0}'
+    flac2mp3_message=$(echo -e "[$flac2mp3_return] Error when changing permissions of file: \"$flac2mp3_newTrack\"\nchmod returned: $flac2mp3_result" | awk '{print "Error|"$0}')
     echo "$flac2mp3_message" | log
     echo "$flac2mp3_message" >&2
     flac2mp3_exitstatus=15
@@ -897,7 +898,7 @@ for flac2mp3_track in $flac2mp3_tracks; do
     [ $flac2mp3_debug -ge 1 ] && echo "Debug|Deleting: \"$flac2mp3_track\"" | log
     flac2mp3_result=$(rm "$flac2mp3_track")
     flac2mp3_return=$?; [ $flac2mp3_return -ne 0 ] && {
-      flac2mp3_message=$(echo -e "[$flac2mp3_return] Error when deleting file: \"$flac2mp3_track\"\nrm returned: $flac2mp3_result" | awk '{print "Error|"$0}'
+      flac2mp3_message=$(echo -e "[$flac2mp3_return] Error when deleting file: \"$flac2mp3_track\"\nrm returned: $flac2mp3_result" | awk '{print "Error|"$0}')
       echo "$flac2mp3_message" | log
       echo "$flac2mp3_message" >&2
       flac2mp3_exitstatus=16

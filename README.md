@@ -15,7 +15,7 @@ Production Container info: [![Docker Image Size](https://img.shields.io/docker/i
 Development Container info:
 [![Docker Image Size](https://img.shields.io/docker/image-size/thecaptain989/lidarr-flac2mp3)](https://hub.docker.com/r/thecaptain989/lidarr-flac2mp3 "Docker image size")
 [![Docker Pulls](https://img.shields.io/docker/pulls/thecaptain989/lidarr-flac2mp3?logo=docker)](https://hub.docker.com/r/thecaptain989/lidarr-flac2mp3 "Docker container pulls")
-[![GitHub Super-Linter](https://github.com/TheCaptain989/lidarr-flac2mp3/actions/workflows/BuildImage.yml/badge.svg)](https://github.com/TheCaptain989/lidarr-flac2mp3/actions/workflows/BuildImage.yml "BuildImage Job")  
+[![Build Image](https://github.com/TheCaptain989/lidarr-flac2mp3/actions/workflows/BuildImage.yml/badge.svg)](https://github.com/TheCaptain989/lidarr-flac2mp3/actions/workflows/BuildImage.yml "BuildImage Job")  
 <!-- markdownlint-restore -->  
 
 # Installation
