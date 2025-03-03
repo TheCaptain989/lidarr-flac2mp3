@@ -254,7 +254,7 @@ Make sure to correctly use quotes and/or escape special characters when using th
 <details>
 <summary>Example Docker Compose</summary>
 
-For example, the following lines in your `compose.yml` file would convert any .mp3 to Opus, and would need an extra `$` to escape the end-of-line regex match:
+For example, the following lines in your `compose.yml` file would convert any .mp3 to Opus, and would need an extra `$` to escape the end-of-line regular expression match:
 
 ```yaml
 environment:
@@ -303,6 +303,7 @@ To convert all .FLAC files in the `/music` directory to Apple Lossless Audio Cod
 ```shell
 find /music/ -type f -name "*.flac" | while read file; do /usr/local/bin/flac2mp3.sh -f "$file" -a "-c:a alac" -e m4a; done
 ```
+
 </details>
 
 ## Metadata Corrections
