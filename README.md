@@ -120,7 +120,7 @@ Option|Argument|Description
 `-v`, `--quality`|`<quality>`|Sets the output variable bit rate (VBR).<br/>Specify a value between 0 and 9, with 0 being the highest quality.<br/>See the [FFmpeg MP3 Encoding Guide](https://trac.ffmpeg.org/wiki/Encode/MP3) for more details.<br/>**Note:** May not be specified with `-b`, `-a`, or `-e`.
 `-a`, `--advanced`<!-- markdownlint-disable-line MD013 -->|`"<options>"`|Advanced ffmpeg options.<br />The specified `options` replace all script defaults and are sent directly to ffmpeg.<br/>The `options` value must be enclosed in quotes.<br/>See [FFmpeg Options](https://ffmpeg.org/ffmpeg.html#Options) for details on valid options, and [Guidelines for high quality audio encoding](https://trac.ffmpeg.org/wiki/Encode/HighQualityAudio) for suggested usage.<br/>**Note:** Requires the `-e` option to also be specified. May not be specified with `-v` or `-b`.<br/>![warning] **WARNING:** You must specify an audio codec (by including a `-c:a <codec>` ffmpeg option) or the resulting file will contain no audio!<br/>![warning] **WARNING:** Invalid `options` could result in script failure!
 `-e`, `--extension`|`<extension>`|Sets the output file extension.<br/>The extension may be prefixed by a dot (".") or not.<br/>Example: .ogg<br/>**Note:** Requires the `-a` option to also be specified. May not be specified with `-v` or `-b`.
-`-f`, `--file`|`<audio_file>`|If included, the script enters **[Batch Mode](#batch-mode)** and converts the specified audio file.<br/>![warning] **WARNING:** Do not use this argument when called from Lidarr!
+`-f`, `--file`|`<audio_file>`|If included, the script enters **[Batch Mode](#batch-mode)** and converts the specified audio file.<br/>![note] **Do not** use this argument when called from Lidarr!
 `-o`, `--output`|`<directory>`|Converted audio file(s) are saved to `directory` instead of being located in the same directory as the source audio file.<br/>The path will be created if it does not exist.
 `-k`, `--keep-file`| |Do not delete the source file or move it to the Lidarr Recycle bin.<br/>**Note:** This also disables importing the new files into Lidarr after conversion.
 `-r`, `--regex`|`'<regex>'`|Sets the regular expression used to select input files.<br/>The `regex` value should be enclosed in single quotes and escaped properly.<br/>Defaults to `[.]flac$`.
@@ -154,7 +154,7 @@ ffmpeg -loglevel error -nostdin -i "input.flac" ${options} "output.${extension}"
 
 <!-- textlint-disable terminology -->
 
-By default, the script only matches and interacts with FLAC files (specifically, files ending in ".flac"). The `-r` option allows the script to match on a user specified regular expression (i.e. "regex") pattern.
+By default, the script only matches and interacts with FLAC files (specifically, files ending in ".flac"). The `--regex` option allows the script to match on a user specified regular expression (i.e. "regex") pattern.
 
 <!-- textlint-enable -->
 
@@ -281,7 +281,7 @@ In a `docker run` command, it would be:
 </details>
 
 ## Triggers
-The only events/notification triggers that are supported are **On Release Import** and **On Upgrade**
+The only events/notification triggers that are supported are **On Release Import** and **On Upgrade**. The script will log an error if executed by any other trigger.
 
 ## Batch Mode
 Batch mode allows the script to be executed independently of Lidarr.  It converts the file specified on the command-line and ignores any environment variables that are normally expected to be set by the music management program.
@@ -290,9 +290,9 @@ Using this function, you can easily process all of your audio files in any subdi
 
 ### Script Execution Differences in Batch Mode
 Because the script is not called from within Lidarr, expect the following behavior while in Batch Mode:
-* *The filename must be specified on the command-line*<br/>(The `-f` option places the script in Batch Mode)
+* *The filename must be specified on the command-line*<br/>The `-f` option places the script in Batch Mode.
 * *Lidarr APIs are not called and its database is not updated.*<br/>This may require a manual import of converted music files or an artist rescan.
-* *Original audio files are deleted.*<br/>The Recycle Bin function is not available. (Modifiable using the `-k` option.)
+* *Original audio files are deleted.* (Modifiable using the `-k` option.)<br/>The Recycle Bin function is not available.
 
 ### Batch Example
 <details>
@@ -358,3 +358,4 @@ This would not be possible without the following:
 Icons made by [Freepik](https://www.freepik.com) from [Flaticon](https://www.flaticon.com/)
 
 [warning]: .assets/warning.png "Warning"
+[note]: .assets/notes.png "Note"
