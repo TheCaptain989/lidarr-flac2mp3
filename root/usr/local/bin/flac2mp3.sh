@@ -179,7 +179,7 @@ while (( "$#" )); do
       exit 0
     ;;
     --version ) # Display version
-      echo "$flac2mp3_script $flac2mp3_ver"
+      echo "${flac2mp3_script} ${flac2mp3_ver/{{VERSION\}\}/unknown}"
       exit 0
     ;;
     -l|--log ) # Log file
@@ -618,7 +618,7 @@ done
 
 # Log Debug state
 if [ $flac2mp3_debug -ge 1 ]; then
-  flac2mp3_message="Debug|Enabling debug logging level ${flac2mp3_debug}. Starting ${lidarr_eventtype^} run."
+  flac2mp3_message="Debug|Running ${flac2mp3_script} version ${flac2mp3_ver/{{VERSION\}\}/unknown} with debug logging level ${flac2mp3_debug}."
   echo "$flac2mp3_message" | log
   echo "$flac2mp3_message" >&2
 fi
