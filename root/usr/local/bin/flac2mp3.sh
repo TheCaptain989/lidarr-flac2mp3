@@ -342,7 +342,7 @@ elif [[ "${flac2mp3_type,,}" = "lidarr" ]]; then
   [ -z "$flac2mp3_tracks" ] && flac2mp3_tracks="$lidarr_trackfile_path"
 else
   # Called in an unexpected way
-  echo -e "Error|Unknown or missing '*_eventtype' environment variable: ${flac2mp3_type}\nNot called from Lidarr. Try using Batch Mode option: -f <file>" >&2
+  echo -e "Error|Unknown or missing '*_eventtype' environment variable: ${flac2mp3_type}\nNot calling from Lidarr? Try using Batch Mode option: -f <file>" >&2
   usage
   exit 7
 fi
@@ -642,6 +642,16 @@ if [[ "$lidarr_eventtype" =~ Grab|Rename|TrackRetag|ArtistAdd|ArtistDeleted|Albu
   end_script 20
 fi
 
+# Check for WSL environment
+if [ -n "$WSL_DISTRO_NAME" ]; then
+  [ $flac2mp3_debug -ge 1 ] && echo "Debug|Running in virtual WSL $WSL_DISTRO_NAME distribution." | log
+  # Adjust config file location to WSL default
+  if [ ! -f "$flac2mp3_config" ]; then
+    flac2mp3_config="/mnt/c/ProgramData/${flac2mp3_type^}/config.xml"
+    [ $flac2mp3_debug -ge 1 ] && echo "Debug|Will try to use the default WSL configuration file '$flac2mp3_config'" | log
+  fi
+fi
+
 # Handle Lidarr Test event
 if [[ "$lidarr_eventtype" = "Test" ]]; then
   echo "Info|${flac2mp3_type^} event: $lidarr_eventtype" | log
@@ -650,6 +660,28 @@ if [[ "$lidarr_eventtype" = "Test" ]]; then
   echo "$flac2mp3_message"
   end_script
 fi
+
+# First normal log entry (when there are no errors)
+# Build dynamic log message
+flac2mp3_message="Info|${flac2mp3_type^} event: ${lidarr_eventtype}"
+if [ "$flac2mp3_type" != "batch" ]; then
+  # shellcheck disable=SC2154
+  flac2mp3_message+=", Artist: ${lidarr_artist_name} (${lidarr_artist_id}), Album: ${lidarr_album_title} (${lidarr_album_id})"
+fi
+if [ -z "$flac2mp3_ffmpegadv" ]; then
+  flac2mp3_message+=", Export bitrate: ${flac2mp3_bitrate:-$flac2mp3_vbrquality}"
+else
+  flac2mp3_message+=", Advanced options: '${flac2mp3_ffmpegadv}', File extension: ${flac2mp3_extension}"
+fi
+if [ -n "$flac2mp3_output" ]; then
+  flac2mp3_message+=", Output: ${flac2mp3_output}"
+fi
+if [ $flac2mp3_keep -eq 1 ]; then
+  flac2mp3_message+=", Keep source"
+fi
+flac2mp3_message+=", Matching regex: '${flac2mp3_regex:=[.]flac$}'"
+flac2mp3_message+=", Track(s): ${flac2mp3_tracks}"
+echo "${flac2mp3_message}" | log
 
 # Log Batch mode
 if [ "$flac2mp3_type" = "batch" ]; then
@@ -675,6 +707,11 @@ elif [ -f "$flac2mp3_config" ]; then
   [ -n "${LIDARR__SERVER__BINDADDRESS}" ] && flac2mp3_bindaddress="${LIDARR__SERVER__BINDADDRESS}"
   [ -n "${LIDARR__AUTH__APIKEY}" ] && flac2mp3_apikey="${LIDARR__AUTH__APIKEY}"
 
+  # Check for WSL environment and adjust bindaddress if not otherwise specified
+  if [ -n "$WSL_DISTRO_NAME" -a "$flac2mp3_bindaddress" = "*" ]; then
+    flac2mp3_bindaddress=$(ip route show | grep -i default | awk '{ print $3}')
+  fi
+
   # Check for localhost
   [[ $flac2mp3_bindaddress = "*" ]] && flac2mp3_bindaddress=localhost
 
@@ -688,6 +725,11 @@ elif [ -f "$flac2mp3_config" ]; then
   if get_version; then
     flac2mp3_version="$(echo $flac2mp3_result | jq -crM .version)"
     [ $flac2mp3_debug -ge 1 ] && echo "Debug|Detected ${flac2mp3_type^} version $flac2mp3_version" | log
+  else
+     # curl errored out. API calls are really broken at this point.
+    flac2mp3_message="Error|[$flac2mp3_return] Unable to get ${flac2mp3_type^} version information."
+    echo "$flac2mp3_message" | log
+    echo "$flac2mp3_message" >&2
   fi
 
   # Get album trackfile info. Need the IDs to delete the old tracks.
@@ -705,20 +747,20 @@ else
   echo "$flac2mp3_message" >&2
 fi
 
-# Check if source audio file exists
-if [ "$flac2mp3_type" = "batch" -a ! -f "$flac2mp3_tracks" ]; then
-  flac2mp3_message="Error|Input file not found: \"$flac2mp3_tracks\""
-  echo "$flac2mp3_message" | log
-  echo "$flac2mp3_message" >&2
-  end_script 5
-fi
-
 # Check for empty tracks variable
 if [ -z "$flac2mp3_tracks" ]; then
   flac2mp3_message="Error|No audio tracks were detected or specified!"
   echo "$flac2mp3_message" | log
   echo "$flac2mp3_message" >&2
   end_script 1
+fi
+
+# Check if source audio file exists
+if [ "$flac2mp3_type" = "batch" -a ! -f "$flac2mp3_tracks" ]; then
+  flac2mp3_message="Error|Input file not found: \"$flac2mp3_tracks\""
+  echo "$flac2mp3_message" | log
+  echo "$flac2mp3_message" >&2
+  end_script 5
 fi
 
 # If specified, check if destination folder exists and create if necessary
@@ -737,27 +779,6 @@ fi
 #find "$lidarr_artist_path" -name "*.flac" -exec bash -c 'ffmpeg -loglevel warning -i "{}" -y -acodec libmp3lame -b:a 320k "${0/.flac}.mp3" && rm "{}"' {} \;
 
 #### BEGIN MAIN
-# Build dynamic log message
-flac2mp3_message="Info|${flac2mp3_type^} event: ${lidarr_eventtype}"
-if [ "$flac2mp3_type" != "batch" ]; then
-  # shellcheck disable=SC2154
-  flac2mp3_message+=", Artist: ${lidarr_artist_name} (${lidarr_artist_id}), Album: ${lidarr_album_title} (${lidarr_album_id})"
-fi
-if [ -z "$flac2mp3_ffmpegadv" ]; then
-  flac2mp3_message+=", Export bitrate: ${flac2mp3_bitrate:-$flac2mp3_vbrquality}"
-else
-  flac2mp3_message+=", Advanced options: '${flac2mp3_ffmpegadv}', File extension: ${flac2mp3_extension}"
-fi
-if [ -n "$flac2mp3_output" ]; then
-  flac2mp3_message+=", Output: ${flac2mp3_output}"
-fi
-if [ $flac2mp3_keep -eq 1 ]; then
-  flac2mp3_message+=", Keep source"
-fi
-flac2mp3_message+=", Matching regex: '${flac2mp3_regex:=[.]flac$}'"
-flac2mp3_message+=", Track(s): ${flac2mp3_tracks}"
-echo "${flac2mp3_message}" | log
-
 # Set ffmpeg parameters
 case "$flac2mp3_debug" in
   0) flac2mp3_ffmpeg_log="error" ;;
@@ -780,7 +801,7 @@ fi
 # Set default ffmpeg options
 [ -z "$flac2mp3_ffmpeg_opts" ] && flac2mp3_ffmpeg_opts="-c:v copy -map 0 -y -acodec libmp3lame ${flac2mp3_ffmpeg_brCommand}-write_id3v1 1 -id3v2_version 3"
 
-# Process tracks
+# Process tracks loop
 #  Changing the input field separator to split track string
 declare -x flac2mp3_import_list=""
 IFS=\|
@@ -799,23 +820,24 @@ for flac2mp3_track in $flac2mp3_tracks; do
     continue
   fi
 
+  # Create a new track name with the given extension
+  flac2mp3_newTrack="${flac2mp3_track%.*}${flac2mp3_extension}"
+
   # Create temporary filename (see issue #54)
   flac2mp3_basename="$(basename -- "${flac2mp3_track}")"
   flac2mp3_fileroot="${flac2mp3_basename%.*}"
   flac2mp3_tempTrack="$(dirname -- "${flac2mp3_track}")/$(mktemp -u -- "${flac2mp3_fileroot:0:5}.tmp.XXXXXX")${flac2mp3_extension}"
-  [ $flac2mp3_debug -ge 1 ] && echo "Debug|Using temporary file \"$flac2mp3_tempTrack\"" | log
 
-  # Create a new track name with the given extension
-  flac2mp3_newTrack="${flac2mp3_track%.*}${flac2mp3_extension}"
   # Redirect output if asked
   if [ -n "$flac2mp3_output" ]; then
     flac2mp3_tempTrack="${flac2mp3_output}${flac2mp3_tempTrack##*/}"
     flac2mp3_newTrack="${flac2mp3_output}${flac2mp3_newTrack##*/}"
   fi
+  [ $flac2mp3_debug -ge 1 ] && echo "Debug|Using temporary file \"$flac2mp3_tempTrack\"" | log
   
   # Check for same track name (see issue #54)
   if [ "$flac2mp3_newTrack" == "$flac2mp3_track" -a $flac2mp3_keep -eq 1 ]; then
-    flac2mp3_message="Error|The original track name and new name are the same and the keep option was specified! Skipping track: $flac2mp3_track"
+    flac2mp3_message="Error|The original track name and new name are the same, but the keep option was specified! Skipping track: $flac2mp3_track"
     echo "$flac2mp3_message" | log
     echo "$flac2mp3_message" >&2
     flac2mp3_exitstatus=11
@@ -874,7 +896,7 @@ for flac2mp3_track in $flac2mp3_tracks; do
   fi
   
   # Convert the track
-  echo "Info|Writing: $flac2mp3_tempTrack" | log
+  echo "Info|Writing: $flac2mp3_newTrack" | log
   flac2mp3_ffcommand="nice /usr/bin/ffmpeg -loglevel $flac2mp3_ffmpeg_log -nostdin -i \"$flac2mp3_track\" $flac2mp3_ffmpeg_opts $flac2mp3_ffmpeg_metadata\"$flac2mp3_tempTrack\""
   [ $flac2mp3_debug -ge 1 ] && echo "Debug|Executing: $flac2mp3_ffcommand" | log
   flac2mp3_result=$(eval $flac2mp3_ffcommand 2>&1)
@@ -883,6 +905,8 @@ for flac2mp3_track in $flac2mp3_tracks; do
     echo "$flac2mp3_message" | log
     echo "$flac2mp3_message" >&2
     flac2mp3_exitstatus=13
+    # Delete the temporary file if it exists
+    [ -f "$flac2mp3_tempTrack" ] && rm -f "$flac2mp3_tempTrack"
     continue
   }
 
@@ -923,6 +947,7 @@ for flac2mp3_track in $flac2mp3_tracks; do
   # NOTE: Implied that the new track and the original track do not have the same name due to earlier check
   if [ $flac2mp3_keep -eq 1 ]; then
     [ $flac2mp3_debug -ge 1 ] && echo "Debug|Keeping original: \"$flac2mp3_track\"" | log
+    # Rename the temporary file to the new track name
     rename_track "$flac2mp3_tempTrack" "$flac2mp3_newTrack"
     flac2mp3_return=$?; [ $flac2mp3_return -ne 0 ] && {
       flac2mp3_exitstatus=8
@@ -933,7 +958,7 @@ for flac2mp3_track in $flac2mp3_tracks; do
   # If in batch mode, just delete the original file
   if [ "$flac2mp3_type" = "batch" ]; then
     [ $flac2mp3_debug -ge 1 ] && echo "Debug|Deleting: \"$flac2mp3_track\"" | log
-    flac2mp3_result=$(rm "$flac2mp3_track")
+    flac2mp3_result=$(rm -f "$flac2mp3_track")
     flac2mp3_return=$?; [ $flac2mp3_return -ne 0 ] && {
       flac2mp3_message=$(echo -e "[$flac2mp3_return] Error when deleting file: \"$flac2mp3_track\"\nrm returned: $flac2mp3_result" | awk '{print "Error|"$0}')
       echo "$flac2mp3_message" | log
@@ -969,7 +994,7 @@ IFS=$' \t\n'
 #### Call Lidarr API to update database
 # Check for URL
 if [ "$flac2mp3_type" = "batch" ]; then
-  [ $flac2mp3_debug -ge 1 ] && echo "Debug|Cannot use API in batch mode." | log
+  [ $flac2mp3_debug -ge 1 ] && echo "Debug|Not calling API while in batch mode." | log
 elif [ $flac2mp3_keep -eq 1 ]; then
   echo "Info|Original audio file(s) kept, no database update performed." | log
 elif [ -n "$flac2mp3_api_url" ]; then
