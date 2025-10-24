@@ -167,7 +167,7 @@ For example, to convert all audio files to AAC audio files, use the following op
 -a "-y -map 0 -c:a aac -b:a 240k -c:v copy" -e m4a --regex '[.][^.]*$'
 ```
 
-Regular expression syntax is beyond the scope of this document.  See this [tutorial](https://www.regular-expressions.info/tutorial.html "Regular Expressions Tutorial") for more information. Regular expression patterns may be tested [here](http://regexstorm.net/tester "regex tester").
+Regular expression syntax is beyond the scope of this document.  See this [tutorial](https://www.regular-expressions.info/tutorial.html "Regular Expressions Tutorial") for more information. Regular expression patterns may be tested at [Regex Storm](http://regexstorm.net/tester "regex tester").
 
 </details>
 

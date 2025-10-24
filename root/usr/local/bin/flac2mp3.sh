@@ -485,6 +485,7 @@ function check_job {
 function get_trackfile_info {
   # Get all track files from album
 
+  # shellcheck disable=SC2154
   call_api 0 "Getting track file info for album id $lidarr_album_id." "GET" "trackFile" "albumId=$lidarr_album_id"
   local json_test="$(echo $flac2mp3_result | jq -crM '.[].id?')"
   [  "$json_test" != "null" ] && [ "$json_test" != "" ]
@@ -518,6 +519,7 @@ function rename_track {
 function get_import_info {
   # Get file details on possible files to import into Lidarr
 
+  # shellcheck disable=SC2154
   call_api 1 "Getting list of files that can be imported." "GET" "manualimport" "artistId=$lidarr_artist_id&folder=$lidarr_artist_path&filterExistingFiles=true&replaceExistingFiles=false"
   [ "$flac2mp3_result" != "null" ] && [ "$flac2mp3_result" != "" ]
   return
