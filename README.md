@@ -157,8 +157,6 @@ ffmpeg -loglevel error -nostdin -i "input.flac" ${options} "output.${extension}"
 
 By default, the script only matches and interacts with FLAC files (specifically, files ending in ".flac"). The `--regex` option allows the script to match on a user specified regular expression (i.e. "regex") pattern.
 
-<!-- textlint-enable -->
-
 Files are passed to the script with the full Linux path intact. (Ex: `/path/to/audio/a-ha/Hunting High and Low/01 Take on Me.mp3`).  Craft your regular expression with this in mind.
 
 For example, to convert all audio files to AAC audio files, use the following options:  
@@ -168,6 +166,8 @@ For example, to convert all audio files to AAC audio files, use the following op
 ```
 
 Regular expression syntax is beyond the scope of this document.  See this [tutorial](https://www.regular-expressions.info/tutorial.html "Regular Expressions Tutorial") for more information. Regular expression patterns may be tested at [Regex Storm](http://regexstorm.net/tester "regex tester").
+
+<!-- textlint-enable -->
 
 </details>
 
