@@ -6,8 +6,48 @@ env:
   ENDPOINT: "thecaptain989/lidarr-flac2mp3"
 
 jobs:
+  unit_test:
+    name: Unit Test Job
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -e {0}
+    container:
+      image: linuxserver/lidarr:latest
+      options: --user root
+      env:
+        TZ: America/Chicago
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Start Lidarr
+        run: |
+          # Start Lidarr in the background
+          /app/lidarr/bin/Lidarr -nobrowser -data=/config &
+          sleep 1  # Wait for Lidarr to start
+
+      - name: Create temp directory
+        run: |
+          # Not sure why this is needed in a runner container, but it is
+          mkdir -p $TMPDIR
+
+      - name: Install dependencies
+        run: |
+          apk add --no-cache ffmpeg
+
+      - name: Unit testing with bash_unit
+        run: |
+          curl -s https://raw.githubusercontent.com/bash-unit/bash_unit/main/install.sh | bash
+          FORCE_COLOR=true ./bash_unit .github/tests/test_*
+
+      - name: Print GitHub summary
+        run: echo "All Unit Tests PASSED" >> $GITHUB_STEP_SUMMARY
+
   lint:
     name: Lint Job
+    needs: unit_test
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -15,18 +55,18 @@ jobs:
       statuses: write
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           # Full git history is needed to get a proper list of changed files within `super-linter`
           fetch-depth: 0
 
       - name: Lint Code Base
-        uses: super-linter/super-linter/slim@v7
+        uses: super-linter/super-linter/slim@v8
         env:
           VALIDATE_BASH: true
           BASH_SEVERITY: style
           BASH_FILE_NAME: .shellcheckrc
-          # Adding this here for now becaue the config file does not work
+          # Adding this here for now because the config file does not work
           # SHELLCHECK_OPTS: '--exclude SC1090,SC1091,SC2086,SC2155,SC2166'
           # Maybe fixed in v7?
           VALIDATE_BASH_EXEC: true
