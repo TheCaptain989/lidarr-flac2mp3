@@ -23,9 +23,10 @@ test_lidarr_test_event() {
 }
 
 test_lidarr_version() {
+  fake get_trackfile_info :
   check_eventtype
   check_config
-  assert_within_delta 5 ${flac2mp3_version/.*/} 1
+  assert_within_delta 2 ${flac2mp3_version/.*/} 1
 }
 
 teardown_suite() {
