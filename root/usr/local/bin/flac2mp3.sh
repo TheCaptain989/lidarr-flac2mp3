@@ -494,9 +494,20 @@ function get_trackfile_info {
 function delete_track {
   # Delete track
 
-  local track_id="$1"
-
-  call_api 0 "Deleting or recycling \"$track\"." "DELETE" "trackFile/$track_id"
+  local url="$flac2mp3_api_url/trackFile/$1"
+  [ $flac2mp3_debug -ge 1 ] && echo "Debug|Deleting or recycling \"$track\". Calling ${flac2mp3_type^} API using DELETE and URL '$url'" | log
+  unset flac2mp3_result
+  flac2mp3_result=$(curl -s --fail-with-body -H "X-Api-Key: $flac2mp3_apikey" \
+     -H "Content-Type: application/json" \
+     -H "Accept: application/json" \
+     -X DELETE "$url")
+  local curl_return=$?; [ $curl_return -ne 0 ] && {
+    local message=$(echo -e "[$curl_return] curl error when calling: \"$url\"${data:+ with $data}\nWeb server returned: $(echo $flac2mp3_result | jq -jcM 'if has("title") then "[HTTP \(.status?)] \(.title?) \(.errors?)" else .message? end')" | awk '{print "Error|"$0}')
+    echo "$message" | log
+    echo "$message" >&2
+  }
+  [ $flac2mp3_debug -ge 2 ] && echo "API returned: $flac2mp3_result" | awk '{print "Debug|"$0}' | log
+  [ $flac2mp3_debug -ge 2 -a ${#flac2mp3_result} -gt 0 ] && echo "API returned: $flac2mp3_result" | awk '{print "Debug|"$0}' | log
   [ "$flac2mp3_result" != "null" ] && [ "$flac2mp3_result" != "" ]
   return
 }
@@ -519,16 +530,52 @@ function rename_track {
 function get_import_info {
   # Get file details on possible files to import into Lidarr
 
+  local url="$flac2mp3_api_url/manualimport"
   # shellcheck disable=SC2154
-  call_api 1 "Getting list of files that can be imported." "GET" "manualimport" "artistId=$lidarr_artist_id&folder=$lidarr_artist_path&filterExistingFiles=true&replaceExistingFiles=false"
-  [ "$flac2mp3_result" != "null" ] && [ "$flac2mp3_result" != "" ]
+  local data="artistId=$lidarr_artist_id&folder=$lidarr_artist_path&filterExistingFiles=true&replaceExistingFiles=false"
+  [ $flac2mp3_debug -ge 1 ] && echo "Debug|Getting list of files that can be imported. Calling ${flac2mp3_type^} API using GET and URL '$url?$data'" | log
+  unset flac2mp3_result
+  flac2mp3_result=$(curl -s --fail-with-body -H "X-Api-Key: $flac2mp3_apikey" \
+    -H "Content-Type: application/json" \
+		-H "Accept: application/json" \
+    --data-urlencode "artistId=$lidarr_artist_id" \
+    --data-urlencode "folder=$lidarr_artist_path" \
+    --data-urlencode "filterExistingFiles=true" \
+    --data-urlencode "replaceExistingFiles=false" \
+    --get "$url")
+  local curl_return=$?; [ $curl_return -ne 0 ] && {
+    local message=$(echo -e "[$curl_return] curl error when calling: \"$url\"${data:+ with $data}\nWeb server returned: $(echo $flac2mp3_result | jq -jcM 'if has("title") then "[HTTP \(.status?)] \(.title?) \(.errors?)" else .message? end')" | awk '{print "Error|"$0}')
+    echo "$message" | log
+    echo "$message" >&2
+  }
+  # APIs can return A LOT of data, and it is not always needed for debugging
+  [ $flac2mp3_debug -ge 2 ] && echo "Debug|API returned ${#flac2mp3_result} bytes." | log
+  [ $flac2mp3_debug -ge 3 -a ${#flac2mp3_result} -gt 0 ] && echo "API returned: $flac2mp3_result" | awk '{print "Debug|"$0}' | log
+  local json_test="$(echo $flac2mp3_result | jq -crM '.[]? | .path?')"
+  [  "$json_test" != "null" ] && [ "$json_test" != "" ]
   return
 }
 function import_tracks {
   # Import new track into Lidarr
 
+  local url="$flac2mp3_api_url/command"
+  local data="{\"name\":\"ManualImport\",\"files\":$flac2mp3_json,\"importMode\":\"auto\",\"replaceExistingFiles\":false}"
   echo "Info|Calling ${flac2mp3_type^} API to import tracks" | log
-  cap_api 0 "Importing $flac2mp3_import_count new files into ${flac2mp3_type^}." "POST" "command" "{\"name\":\"ManualImport\",\"files\":$flac2mp3_json,\"importMode\":\"auto\",\"replaceExistingFiles\":false}"
+  [ $flac2mp3_debug -ge 1 ] && echo "Debug|Importing $flac2mp3_import_count new files into ${flac2mp3_type^}. Calling ${flac2mp3_type^} API using POST and URL '$url' with data $data" | log
+  unset flac2mp3_result
+  flac2mp3_result=$(curl -s --fail-with-body -H "X-Api-Key: $flac2mp3_apikey" \
+    --json "{\"name\":\"ManualImport\"," \
+    --json "\"files\":$flac2mp3_json," \
+    --json "\"importMode\":\"auto\",\"replaceExistingFiles\":false}" \
+    "$url")
+  local curl_return=$?; [ $curl_return -ne 0 ] && {
+    local message=$(echo -e "[$curl_return] curl error when calling: \"$url\"${data:+ with $data}\nWeb server returned: $(echo $flac2mp3_result | jq -jcM 'if has("title") then "[HTTP \(.status?)] \(.title?) \(.errors?)" else .message? end')" | awk '{print "Error|"$0}')
+    echo "$message" | log
+    echo "$message" >&2
+  }
+  # APIs can return A LOT of data, and it is not always needed for debugging
+  [ $flac2mp3_debug -ge 2 ] && echo "Debug|API returned ${#flac2mp3_result} bytes." | log
+  [ $flac2mp3_debug -ge 2 -a ${#flac2mp3_result} -gt 0 ] && echo "API returned: $flac2mp3_result" | awk '{print "Debug|"$0}' | log
   [ "$flac2mp3_result" != "null" ] && [ "$flac2mp3_result" != "" ]
   return
 }
@@ -769,10 +816,30 @@ function call_api {
   local message="$2" # Message to log
   local method="$3" # HTTP method to use (GET, POST, PUT, DELETE)
   local endpoint="$4" # API endpoint to call
-  local data="$5" # Data to send with the request
+  local data # Data to send with the request. All subsequent arguments are treated as data.
+
+  # Process remaining data values
+  shift 4
+  while (( "$#" )); do
+    case "$1" in
+      \{*)
+        data+=" --json $1"  # This isn't working. I can't find the right way to quote the JSON object.
+        shift
+      ;;
+      *=*)
+        data+=" --data-urlencode $1" # This isn't working. I can't find the right way to build multiple arguments.
+        shift
+      ;;
+      *)
+        data+=" -d $1"
+        shift
+      ;;
+    esac
+  done
 
   local url="$flac2mp3_api_url/$endpoint"
-  [ $flac2mp3_debug -ge 1 ] && echo "Debug|$message Calling ${flac2mp3_type^} API using $method and URL '$url'${data:+ with data $data}" | log
+  [ $flac2mp3_debug -ge 1 ] && echo "Debug|$message Calling ${flac2mp3_type^} API using $method and URL '$url'${data:+ with$data}" | log
+  # Special handling of GET method
   if [ "$method" = "GET" ]; then
     method="-G"
   else
@@ -784,11 +851,11 @@ function call_api {
     -H "X-Api-Key: $flac2mp3_apikey" \
     -H "Content-Type: application/json" \
     -H "Accept: application/json" \
-    ${data:+ --data-urlencode "$data"} \
+    ${data:+$data} \
     $method \
     "$url")
   local curl_return=$?; [ $curl_return -ne 0 ] && {
-    local message=$(echo -e "[$curl_return] curl error when calling: \"$url\"${data:+ with data $data}\nWeb server returned: $(echo $flac2mp3_result | jq -jcM '.message?')" | awk '{print "Error|"$0}')
+    local message=$(echo -e "[$curl_return] curl error when calling: \"$url\"${data:+ with$data}\nWeb server returned: $(echo $flac2mp3_result | jq -jcM 'if has("title") then "[HTTP \(.status?)] \(.title?) \(.errors?)" else .message? end')" | awk '{print "Error|"$0}')
     echo "$message" | log
     echo "$message" >&2
   }
