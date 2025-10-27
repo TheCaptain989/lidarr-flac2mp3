@@ -1066,6 +1066,9 @@ function process_tracks {
   done
   # Restore IFS
   IFS=$' \t\n'
+  # Remove trailing pipe
+  export flac2mp3_import_list="${flac2mp3_import_list%|}"
+  [ $flac2mp3_debug -ge 1 ] && echo "Debug|Track import list: \"$flac2mp3_import_list\"" | log
 }
 function update_database {
   # Call Lidarr API to update database
@@ -1078,9 +1081,6 @@ function update_database {
   elif [ -n "$flac2mp3_api_url" ]; then
     # Check for artist ID
     if [ -n "$lidarr_artist_id" ]; then
-      # Remove trailing pipe
-      flac2mp3_import_list="${flac2mp3_import_list%|}"
-      [ $flac2mp3_debug -ge 1 ] && echo "Debug|Track import list: \"$flac2mp3_import_list\"" | log
       # Scan for files to import into Lidarr
       export flac2mp3_import_count=$(echo $flac2mp3_import_list | awk -F\| '{print NF}')
       if [ $flac2mp3_import_count -ne 0 ]; then
