@@ -872,7 +872,7 @@ function process_tracks {
   # Process tracks loop
   
   # Changing the input field separator to split track string
-  declare -x flac2mp3_import_list=""
+  declare -g flac2mp3_import_list=""
   IFS=\|
   for track in $flac2mp3_tracks; do
     # Guard clause: regex not match
@@ -1067,7 +1067,7 @@ function process_tracks {
   # Restore IFS
   IFS=$' \t\n'
   # Remove trailing pipe
-  export flac2mp3_import_list="${flac2mp3_import_list%|}"
+  flac2mp3_import_list="${flac2mp3_import_list%|}"
   [ $flac2mp3_debug -ge 1 ] && echo "Debug|Track import list: \"$flac2mp3_import_list\"" | log
 }
 function update_database {
