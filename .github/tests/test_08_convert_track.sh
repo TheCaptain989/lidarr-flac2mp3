@@ -2,7 +2,7 @@
 
 # bash_unit tests
 # Convert audio file
-# ffmpeg installed from BuildImage.yml
+# Lidarr installed from BuildImage.yml
 
 setup_suite() {
   which ffmpeg >/dev/null || { printf "\t\e[0;91ffmpeg not found\e[0m\n"; exit 1; }

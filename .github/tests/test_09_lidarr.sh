@@ -5,10 +5,12 @@
 
 setup_suite() {
   source ../../root/usr/local/bin/flac2mp3.sh
+  export test_track2="stereo.flac"
   fake log :
 }
 
 setup() {
+  [ -f "$test_track2" ] || { wget -q "https://github.com/sfiera/flac-test-files/raw/refs/heads/master/stereo.flac" -O "$test_track2"; }
   export lidarr_eventtype="Import"
   initialize_variables
   initialize_mode_variables
@@ -29,7 +31,20 @@ test_lidarr_version() {
   assert_within_delta 2 ${flac2mp3_version/.*/} 1
 }
 
+todo_test_track_conversion() {
+  fake get_trackfile_info :
+  export lidarr_addedtrackpaths="./$test_track2"
+  process_command_line
+  initialize_mode_variables
+  check_tracks
+  set_ffmpeg_parameters
+  process_tracks
+  assert "test ! -f $test_track2" && \
+  assert "test -f \"${test_track2%.flac}.mp3\""
+  assert_equals 0 $flac2mp3_exitstatus
+}
+
 teardown_suite() {
   rm -f "./flac2mp3.txt"
-  unset lidarr_eventtype flac2mp3_config
+  unset lidarr_eventtype lidarr_addedtrackpaths flac2mp3_config flac2mp3_version
 }
