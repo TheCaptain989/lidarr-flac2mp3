@@ -519,6 +519,7 @@ function rename_track {
 function get_import_info {
   # Get file details on possible files to import into Lidarr
 
+  # shellcheck disable=SC2154
   call_api 1 "Getting list of files that can be imported." "GET" "manualimport" "artistId=$lidarr_artist_id" "folder=$lidarr_artist_path" "filterExistingFiles=true" "replaceExistingFiles=false"
   local json_test="$(echo $flac2mp3_result | jq -crM '.[]? | .path?')"
   [  "$json_test" != "null" ] && [ "$json_test" != "" ]
@@ -775,7 +776,7 @@ function call_api {
   shift 4
   while (( "$#" )); do
     case "$1" in
-      {*)
+      "{"*)
         data+=" --json ${1//\"/\\\"}"
         shift
       ;;
