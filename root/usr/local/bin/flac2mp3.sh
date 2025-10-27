@@ -777,7 +777,7 @@ function call_api {
   while (( "$#" )); do
     case "$1" in
       "{"*)
-        data+=" --json ${1//\"/\\\"}"
+        data+=" --json \"${1//\"/\\\"}\""
         shift
       ;;
       *=*)
