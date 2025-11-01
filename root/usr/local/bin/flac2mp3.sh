@@ -442,7 +442,16 @@ function read_xml {
 function get_version {
   # Get Lidarr version
 
-  call_api 0 "Getting ${flac2mp3_type^} version." "GET" "system/status"
+  local i=0
+  for ((i=0; i <= 5; i++)); do
+    call_api 0 "Getting ${flac2mp3_type^} version." "GET" "system/status"
+
+    # Exit loop if database is not locked, else wait
+    if wait_if_locked; then
+      break
+    fi
+  done
+  
   local json_test="$(echo $flac2mp3_result | jq -crM '.version?')"
   [ "$json_test" != "null" ] && [ "$json_test" != "" ]
   return
@@ -485,8 +494,16 @@ function check_job {
 function get_trackfile_info {
   # Get all track files from album
 
-  # shellcheck disable=SC2154
-  call_api 0 "Getting track file info for album id $lidarr_album_id." "GET" "trackFile" "albumId=$lidarr_album_id"
+  local i=0
+  for ((i=0; i <= 5; i++)); do
+    # shellcheck disable=SC2154
+    call_api 0 "Getting track file info for album id $lidarr_album_id." "GET" "trackFile" "albumId=$lidarr_album_id"
+    # Exit loop if database is not locked, else wait
+    if wait_if_locked; then
+      break
+    fi
+  done
+
   local json_test="$(echo $flac2mp3_result | jq -crM '.[].id?')"
   [  "$json_test" != "null" ] && [ "$json_test" != "" ]
   return
@@ -496,9 +513,20 @@ function delete_track {
 
   local track_id="$1"
 
-  call_api 0 "Deleting or recycling \"$track\"." "DELETE" "trackFile/$track_id"
-  [ "$flac2mp3_result" = "null" ] || [ "$flac2mp3_result" = "" ]
-  return
+  local return=0
+  local i=0
+  for ((i=0; i <= 5; i++)); do
+    call_api 0 "Deleting or recycling \"$track\"." "DELETE" "trackFile/$track_id"
+    local api_return=$?; [ $return -ne 0 ] && {
+      local return=1
+      break
+    }
+    # Exit loop if database is not locked, else wait
+    if wait_if_locked; then
+      break
+    fi
+  done
+  return $return
 }
 function rename_track {
   # Rename the temporary file to the new track name
@@ -519,8 +547,16 @@ function rename_track {
 function get_import_info {
   # Get file details on possible files to import into Lidarr
 
-  # shellcheck disable=SC2154
-  call_api 1 "Getting list of files that can be imported." "GET" "manualimport" "artistId=$lidarr_artist_id" "folder=$lidarr_artist_path" "filterExistingFiles=true" "replaceExistingFiles=false"
+  local i=0
+  for ((i=0; i <= 5; i++)); do
+    # shellcheck disable=SC2154
+    call_api 1 "Getting list of files that can be imported." "GET" "manualimport" "artistId=$lidarr_artist_id" "folder=$lidarr_artist_path" "filterExistingFiles=true" "replaceExistingFiles=false"
+    # Exit loop if database is not locked, else wait
+    if wait_if_locked; then
+      break
+    fi
+  done
+
   local json_test="$(echo $flac2mp3_result | jq -crM '.[]? | .path?')"
   [  "$json_test" != "null" ] && [ "$json_test" != "" ]
   return
@@ -528,7 +564,15 @@ function get_import_info {
 function import_tracks {
   # Import new track into Lidarr
 
-  call_api 0 "Importing $flac2mp3_import_count new files into ${flac2mp3_type^}." "POST" "command" "{\"name\":\"ManualImport\",\"files\":$flac2mp3_json,\"importMode\":\"auto\",\"replaceExistingFiles\":false}"
+  local i=0
+  for ((i=0; i <= 5; i++)); do
+    call_api 0 "Importing $flac2mp3_import_count new files into ${flac2mp3_type^}." "POST" "command" "{\"name\":\"ManualImport\",\"files\":$flac2mp3_json,\"importMode\":\"auto\",\"replaceExistingFiles\":false}"
+    # Exit loop if database is not locked, else wait
+    if wait_if_locked; then
+      break
+    fi
+  done
+  
   local json_test="$(echo $flac2mp3_result | jq -crM '.id?')"
   [ "$json_test" != "null" ] && [ "$json_test" != "" ]
   return
@@ -812,6 +856,18 @@ function call_api {
   [ $flac2mp3_debug -ge 2 ] && echo "Debug|API returned ${#flac2mp3_result} bytes." | log
   [ $flac2mp3_debug -ge $((2 + debug_add)) -a ${#flac2mp3_result} -gt 0 ] && echo "API returned: $flac2mp3_result" | awk '{print "Debug|"$0}' | log
   return $curl_return
+}
+function wait_if_locked {
+  # Wait 1 minute if database is locked
+
+  if [[ "$(echo $flac2mp3_result | jq -jcM '.message?')" =~ database\ is\ locked ]]; then
+    local return=1
+    echo "Warn|Database is locked; system is likely overloaded. Sleeping 1 minute." | log
+    sleep 60
+  else 
+    local return=0
+  fi
+  return $return
 }
 function check_tracks {
   # Various sanity checks on tracks and output directory
