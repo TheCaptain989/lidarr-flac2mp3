@@ -32,6 +32,7 @@ test_lidarr_version() {
 }
 
 test_lidarr_call_api_with_json() {
+  fake get_trackfile_info :
   check_eventtype
   check_config
   call_api 0 "Creating a test tag." "POST" "tag" '{"label":"test"}'
@@ -39,6 +40,7 @@ test_lidarr_call_api_with_json() {
 }
 
 test_lidarr_call_api_with_urlencode() {
+  fake get_trackfile_info :
   check_eventtype
   check_config
   call_api 0 "Getting tmp filesystem info." "GET" "filesystem" "path=/tmp/"
