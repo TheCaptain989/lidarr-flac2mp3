@@ -819,17 +819,19 @@ function call_api {
   # Process remaining data values
   shift 4
   while (( "$#" )); do
-    case "$1" in
+    # Escape double quotes in data parameter
+    local param="${1//\"/\\\"}"
+    case "$param" in
       "{"*|"["*)
-        data+=" --json \"${1//\"/\\\"}\""
+        data+=" --json \"$param\""
         shift
       ;;
       *=*)
-        data+=" --data-urlencode \"$1\""
+        data+=" --data-urlencode \"$param\""
         shift
       ;;
       *)
-        data+=" -d \"$1\""
+        data+=" --data-raw \"$param\""
         shift
       ;;
     esac

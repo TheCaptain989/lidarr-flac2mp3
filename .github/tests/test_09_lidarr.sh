@@ -31,6 +31,20 @@ test_lidarr_version() {
   assert_within_delta 2 ${flac2mp3_version/.*/} 1
 }
 
+test_lidarr_call_api_with_json() {
+  check_eventtype
+  check_config
+  call_api 0 "Creating a test tag." "POST" "tag" '{"label":"test"}'
+  assert_equals '{"label":"test","id":1}' "$(echo $striptracks_result | jq -jcM)"
+}
+
+test_lidarr_call_api_with_urlencode() {
+  check_eventtype
+  check_config
+  call_api 0 "Creating a test tag." "GET" "filesystem" "path=/tmp/"
+  assert_equals '{"parent":"/","directories":[],"files":[]}' "$(echo $striptracks_result | jq -jcM)"
+}
+
 todo_test_track_conversion() {
   fake get_trackfile_info :
   export lidarr_addedtrackpaths="./$test_track2"
