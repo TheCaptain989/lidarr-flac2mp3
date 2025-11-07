@@ -35,14 +35,14 @@ test_lidarr_call_api_with_json() {
   check_eventtype
   check_config
   call_api 0 "Creating a test tag." "POST" "tag" '{"label":"test"}'
-  assert_equals '{"label":"test","id":1}' "$(echo $striptracks_result | jq -jcM)"
+  assert_equals '{"label":"test","id":1}' "$(echo $flac2mp3_result | jq -jcM)"
 }
 
 test_lidarr_call_api_with_urlencode() {
   check_eventtype
   check_config
-  call_api 0 "Creating a test tag." "GET" "filesystem" "path=/tmp/"
-  assert_equals '{"parent":"/","directories":[],"files":[]}' "$(echo $striptracks_result | jq -jcM)"
+  call_api 0 "Getting tmp filesystem info." "GET" "filesystem" "path=/tmp/"
+  assert_equals '{"parent":"/","directories":[],"files":[]}' "$(echo $flac2mp3_result | jq -jcM)"
 }
 
 todo_test_track_conversion() {
