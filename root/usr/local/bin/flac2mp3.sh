@@ -445,7 +445,6 @@ function get_version {
   local i=0
   for ((i=0; i <= 5; i++)); do
     call_api 0 "Getting ${flac2mp3_type^} version." "GET" "system/status"
-
     # Exit loop if database is not locked, else wait
     if wait_if_locked; then
       break
@@ -518,13 +517,12 @@ function delete_track {
   for ((i=0; i <= 5; i++)); do
     call_api 0 "Deleting or recycling \"$track\"." "DELETE" "trackFile/$track_id"
     local api_return=$?; [ $return -ne 0 ] && {
-      local return=1
-      break
+      # Exit loop if database is not locked, else wait
+      if wait_if_locked; then
+        local return=1
+        break
+      fi
     }
-    # Exit loop if database is not locked, else wait
-    if wait_if_locked; then
-      break
-    fi
   done
   return $return
 }
@@ -861,6 +859,10 @@ function call_api {
 }
 function wait_if_locked {
   # Wait 1 minute if database is locked
+
+  # Exit codes:
+  #  0 - Database is locked
+  #  1 - Database is not locked
 
   if [[ "$(echo $flac2mp3_result | jq -jcM '.message?')" =~ database\ is\ locked ]]; then
     local return=1
