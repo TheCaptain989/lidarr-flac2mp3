@@ -118,11 +118,6 @@ load_music() {
   flac2mp3_import_count=$(echo $flac2mp3_import_list | awk -F\| '{print NF}')
 }
 
-delete_music() {
-  check_config
-  call_api 0 "Deleting video file from Radarr." "DELETE" "movie/$radarr_movie_id" "deleteFiles=true"
-}
-
 teardown_suite() {
   rm -d -f "./flac2mp3.txt" $album_dir/$download_track "$album_dir/${test_track2%.flac}.mp3" "$album_dir/${test_track2%.flac}.json" "$album_dir/$test_track2" "$album_dir" "$artist_dir"
   unset lidarr_eventtype lidarr_addedtrackpaths flac2mp3_config flac2mp3_version
