@@ -442,17 +442,18 @@ function read_xml {
 function get_version {
   # Get Lidarr version
 
-  local i=0
-  for ((i=0; i <= 5; i++)); do
-    call_api 0 "Getting ${flac2mp3_type^} version." "GET" "system/status"
-    # Exit loop if database is not locked, else wait
-    if wait_if_locked; then
-      break
-    fi
-  done
-  
+  call_api 0 "Getting ${flac2mp3_type^} version." "GET" "system/status"
   local json_test="$(echo $flac2mp3_result | jq -crM '.version?')"
   [ "$json_test" != "null" ] && [ "$json_test" != "" ]
+  return
+}
+function get_trackfile_info {
+  # Get all track files from album
+
+  # shellcheck disable=SC2154
+  call_api 0 "Getting track file info for album id $lidarr_album_id." "GET" "trackFile" "albumId=$lidarr_album_id"
+  local json_test="$(echo $flac2mp3_result | jq -crM '.[].id?')"
+  [  "$json_test" != "null" ] && [ "$json_test" != "" ]
   return
 }
 function check_job {
@@ -490,41 +491,13 @@ function check_job {
   done
   return $return
 }
-function get_trackfile_info {
-  # Get all track files from album
-
-  local i=0
-  for ((i=0; i <= 5; i++)); do
-    # shellcheck disable=SC2154
-    call_api 0 "Getting track file info for album id $lidarr_album_id." "GET" "trackFile" "albumId=$lidarr_album_id"
-    # Exit loop if database is not locked, else wait
-    if wait_if_locked; then
-      break
-    fi
-  done
-
-  local json_test="$(echo $flac2mp3_result | jq -crM '.[].id?')"
-  [  "$json_test" != "null" ] && [ "$json_test" != "" ]
-  return
-}
 function delete_track {
   # Delete track
 
-  local track_id="$1"
+  local track_id="$1"  # ID of track to delete
 
-  local return=0
-  local i=0
-  for ((i=0; i <= 5; i++)); do
-    call_api 0 "Deleting or recycling \"$track\"." "DELETE" "trackFile/$track_id"
-    local api_return=$?; [ $return -ne 0 ] && {
-      # Exit loop if database is not locked, else wait
-      if wait_if_locked; then
-        local return=1
-        break
-      fi
-    }
-  done
-  return $return
+  call_api 0 "Deleting or recycling \"$track\"." "DELETE" "trackFile/$track_id"
+  return
 }
 function rename_track {
   # Rename the temporary file to the new track name
@@ -545,32 +518,16 @@ function rename_track {
 function get_import_info {
   # Get file details on possible files to import into Lidarr
 
-  local i=0
-  for ((i=0; i <= 5; i++)); do
-    # shellcheck disable=SC2154
-    call_api 1 "Getting list of files that can be imported." "GET" "manualimport" "artistId=$lidarr_artist_id" "folder=$lidarr_artist_path" "filterExistingFiles=true" "replaceExistingFiles=false"
-    # Exit loop if database is not locked, else wait
-    if wait_if_locked; then
-      break
-    fi
-  done
-
-  local json_test="$(echo $flac2mp3_result | jq -crM '.[]? | .path?')"
-  [  "$json_test" != "null" ] && [ "$json_test" != "" ]
+  # shellcheck disable=SC2154
+  call_api 1 "Getting list of files that can be imported." "GET" "manualimport" "artistId=$lidarr_artist_id" "folder=$lidarr_artist_path" "filterExistingFiles=true" "replaceExistingFiles=false"
+  local json_test="$(echo $flac2mp3_result | jq -crM '.[]? | .tracks?')"
+  [  "$json_test" != "null" ] && [ "$json_test" != "" ] && [ "$json_test" != "[]" ]
   return
 }
 function import_tracks {
   # Import new track into Lidarr
 
-  local i=0
-  for ((i=0; i <= 5; i++)); do
-    call_api 0 "Importing $flac2mp3_import_count new files into ${flac2mp3_type^}." "POST" "command" "{\"name\":\"ManualImport\",\"files\":$flac2mp3_json,\"importMode\":\"auto\",\"replaceExistingFiles\":false}"
-    # Exit loop if database is not locked, else wait
-    if wait_if_locked; then
-      break
-    fi
-  done
-  
+  call_api 0 "Importing $flac2mp3_import_count new files into ${flac2mp3_type^}." "POST" "command" "{\"name\":\"ManualImport\",\"files\":$flac2mp3_json,\"importMode\":\"auto\",\"replaceExistingFiles\":false}"
   local json_test="$(echo $flac2mp3_result | jq -crM '.id?')"
   [ "$json_test" != "null" ] && [ "$json_test" != "" ]
   return
@@ -844,14 +801,26 @@ function call_api {
     method="-X $method"
   fi
   local curl_cmd="curl -s --fail-with-body -H \"X-Api-Key: $flac2mp3_apikey\" -H \"Content-Type: application/json\" -H \"Accept: application/json\" ${data:+$data} $method \"$url\""
+  [ $flac2mp3_debug -ge 2 ] && echo "Debug|Executing: $curl_cmd" | sed -E 's/(X-Api-Key: )[^"]+/\1[REDACTED]/' | log
   unset flac2mp3_result
   declare -g flac2mp3_result
-  flac2mp3_result=$(eval "$curl_cmd")
-  local curl_return=$?; [ $curl_return -ne 0 ] && {
-    local message=$(echo -e "[$curl_return] curl error when calling: \"$url\"${data:+ with$data}\nWeb server returned: $(echo $flac2mp3_result | jq -jcM 'if has("title") then "[HTTP \(.status?)] \(.title?) \(.errors?)" else .message? end')" | awk '{print "Error|"$0}')
-    echo "$message" | log
-    echo "$message" >&2
-  }
+
+  # Retry up to five times if database is locked
+  local i=0
+  for ((i=0; i <= 5; i++)); do
+    flac2mp3_result=$(eval "$curl_cmd")
+    local curl_return=$?; [ $curl_return -ne 0 ] && {
+      local message=$(echo -e "[$curl_return] curl error when calling: \"$url\"${data:+ with$data}\nWeb server returned: $(echo $flac2mp3_result | jq -jcM 'if type=="array" then map(.errorMessage) | join(", ") else (if has("title") then "[HTTP \(.status?)] \(.title?) \(.errors?)" elif has("message") then .message else "Unknown JSON format." end) end')" | awk '{print "Error|"$0}')
+      echo "$message" | log
+      echo "$message" >&2
+      break
+    }
+    # Exit loop if database is not locked, else wait
+    if wait_if_locked; then
+      break
+    fi
+  done
+
   # APIs can return A LOT of data, and it is not always needed for debugging
   [ $flac2mp3_debug -ge 2 ] && echo "Debug|API returned ${#flac2mp3_result} bytes." | log
   [ $flac2mp3_debug -ge $((2 + debug_add)) -a ${#flac2mp3_result} -gt 0 ] && echo "API returned: $flac2mp3_result" | awk '{print "Debug|"$0}' | log
