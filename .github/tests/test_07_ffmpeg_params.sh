@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # bash_unit tests
-# ffmpeg paramater processing checks
+# ffmpeg parameter processing checks
 
 setup_suite() {
   source ../../root/usr/local/bin/flac2mp3.sh

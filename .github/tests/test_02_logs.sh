@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # bash_unit tests
-# Logs
+# Log file
 
 setup_suite() {
   source ../../root/usr/local/bin/flac2mp3.sh

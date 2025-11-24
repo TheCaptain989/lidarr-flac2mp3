@@ -39,7 +39,7 @@ test_lidarr_version() {
   fake get_trackfile_info :
   check_eventtype
   check_config
-  assert_within_delta 2 ${flac2mp3_version/.*/} 1
+  assert_within_delta 3 ${flac2mp3_version/.*/} 2
 }
 
 test_lidarr_call_api_with_json() {
@@ -119,6 +119,6 @@ load_music() {
 }
 
 teardown_suite() {
-  rm -d -f "./flac2mp3.txt" $album_dir/$download_track "$album_dir/${test_track2%.flac}.mp3" "$album_dir/${test_track2%.flac}.json" "$album_dir/$test_track2" "$album_dir" "$artist_dir"
+  rm -f -d "./flac2mp3.txt" $album_dir/$download_track "$album_dir/${test_track2%.flac}.mp3" "$album_dir/${test_track2%.flac}.json" "$album_dir/$test_track2" "$album_dir" "$artist_dir"
   unset lidarr_eventtype lidarr_addedtrackpaths flac2mp3_config flac2mp3_version
 }

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # bash_unit tests
-# Command line options
+# Basic command line options
 
 setup_suite() {
   source ../../root/usr/local/bin/flac2mp3.sh
@@ -21,15 +21,15 @@ test_cmd_options_require_argument() {
 }
 
 test_cmd_unknown_option() {
-  assert_status_code 20 "process_command_line --will-fail 2>&1"
+  assert_status_code 20 "process_command_line --will-fail"
 }
 
 test_cmd_invalid_options() {
-  assert_status_code 3 "process_command_line -b 128 -v 1 2>&1" && \
-  assert_status_code 3 "process_command_line -a \"-a:c aac\" -v 1 2>&1" && \
-  assert_status_code 3 "process_command_line -e aac -b 128 2>&1" && \
-  assert_status_code 3 "process_command_line -b 128 -a \"-a:c aac\" 2>&1" && \
-  assert_status_code 3 "process_command_line -v 1 -e aac 2>&1" && \
+  assert_status_code 3 "process_command_line -b 128 -v 1" && \
+  assert_status_code 3 "process_command_line -a \"-a:c aac\" -v 1" && \
+  assert_status_code 3 "process_command_line -e aac -b 128" && \
+  assert_status_code 3 "process_command_line -b 128 -a \"-a:c aac\"" && \
+  assert_status_code 3 "process_command_line -v 1 -e aac" && \
   assert_status_code 3 "process_command_line -a \"-a:c aac\""
 }
 

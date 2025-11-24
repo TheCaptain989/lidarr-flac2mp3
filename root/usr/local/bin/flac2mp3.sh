@@ -225,27 +225,25 @@ function process_command_line {
       ;;
       -l|--log )
         # Log file
-        if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
-          export flac2mp3_log="$2"
-          shift 2
-        else
+        if [ -z "$2" ] || [ ${2:0:1} = "-" ]; then
           echo "Error|Invalid option: $1 requires an argument." >&2
           usage
           exit 3
         fi
+        export flac2mp3_log="$2"
+        shift 2
       ;;
       -f|--file )
         # Batch Mode
-        if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
-          # Overrides detected *_eventtype
-          export flac2mp3_type="batch"
-          export flac2mp3_tracks="$2"
-          shift 2
-        else
+        if [ -z "$2" ] || [ ${2:0:1} = "-" ]; then
           echo "Error|Invalid option: $1 requires an argument." >&2
           usage
           exit 3
         fi
+        # Overrides detected *_eventtype
+        export flac2mp3_type="batch"
+        export flac2mp3_tracks="$2"
+        shift 2
       ;;
       -b|--bitrate )
         # Set constant bit rate
@@ -319,14 +317,13 @@ function process_command_line {
       ;;
       -o|--output )
         # Set output directory
-        if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
-          export flac2mp3_output="$2"
-          shift 2
-        else
+        if [ -z "$2" ] || [ ${2:0:1} = "-" ]; then
           echo "Error|Invalid option: $1 requires an argument." >&2
           usage
           exit 3
         fi
+        export flac2mp3_output="$2"
+        shift 2
         # Test for trailing slash
         [ "${flac2mp3_output: -1:1}" != "/" ] && export flac2mp3_output="${flac2mp3_output}/"
       ;;
@@ -337,37 +334,34 @@ function process_command_line {
       ;;
       -r|--regex )
         # Sets the regex used to match input files
-        if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
-          export flac2mp3_regex="$2"
-          shift 2
-        else
+        if [ -z "$2" ] || [ ${2:0:1} = "-" ]; then
           echo "Error|Invalid option: $1 requires an argument." >&2
           usage
           exit 3
         fi
+        export flac2mp3_regex="$2"
+        shift 2
       ;;
       -t|--tags )
         # Metadata tags to correct
-        if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
-          export flac2mp3_tags="$2"
-          shift 2
-        else
+        if [ -z "$2" ] || [ ${2:0:1} = "-" ]; then
           echo "Error|Invalid option: $1 requires an argument." >&2
           usage
           exit 3
         fi
+        export flac2mp3_tags="$2"
+        shift 2
       ;;
       -c|--config )
         # Liarr XML configuration file
-        if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
-          # Overrides default /config/config.xml
-          export flac2mp3_config="$2"
-          shift 2
-        else
+        if [ -z "$2" ] || [ ${2:0:1} = "-" ]; then
           echo "Error|Invalid option: $1 requires an argument." >&2
           usage
           exit 3
         fi
+        # Overrides default /config/config.xml
+        export flac2mp3_config="$2"
+        shift 2
       ;;
       -*)
         # Unknown option
@@ -537,25 +531,15 @@ function ffprobe {
 
   local trackfile="$1" # Track file to inspect
   
-  local ffcommand="/usr/bin/ffprobe -hide_banner -loglevel $flac2mp3_ffmpeg_log -print_format json=compact=1 -show_format -show_entries \"format=tags : format_tags=title,disc,genre\" -i \"$trackfile\""
-  [ $flac2mp3_debug -ge 1 ] && echo "Debug|Executing: $ffcommand" | log
+  local ffcommand="/usr/bin/ffprobe -hide_banner -loglevel $flac2mp3_ffmpeg_log -print_format json=compact=1 -show_format -show_entries \"format=tags : format_tags=title,disc,genre\" -i \"$(escape_string "$trackfile")\""
+  execute_ff_command "$ffcommand" "inspecting file: \"$trackfile\""
+
   unset flac2mp3_ffprobe_json
   declare -g flac2mp3_ffprobe_json
-  flac2mp3_ffprobe_json=$(eval "$ffcommand")
-  local return=$?
-  [ $flac2mp3_debug -ge 1 ] && echo "Debug|ffprobe returned ${#flac2mp3_ffprobe_json} bytes" | log
-  [ $flac2mp3_debug -ge 2 ] && [ ${#flac2mp3_ffprobe_json} -ne 0 ] && echo "ffprobe returned: $flac2mp3_ffprobe_json" | awk '{print "Debug|"$0}' | log
-  [ $return -ne 0 ] && {
-    local message=$(echo -e "[$return] ffprobe error when inspecting file: \"$trackfile\"\nffprobe returned: $flac2mp3_ffprobe_json" | awk '{print "Error|"$0}')
-    echo "$message" | log
-    echo "$message" >&2
-  }
-  if [ "$flac2mp3_ffprobe_json" != "" ]; then
-    local return=0
-  else
-    local return=1
-  fi
-  return $return
+  flac2mp3_ffprobe_json="$flac2mp3_ffresult"
+
+  [ "$flac2mp3_ffprobe_json" != "" ]
+  return
 }
 function end_script {
   # Exit program
@@ -842,6 +826,40 @@ function wait_if_locked {
   fi
   return $return
 }
+function escape_string {
+  # Escape special characters in string for use in ffmpeg commands
+
+  local input="$1" # Input string to escape
+
+  # Escape backslashes, double quotes, and dollar signs
+  # shellcheck disable=SC2001
+  local output="$(echo "$input" | sed -e 's/[`"\\$]/\\&/g')"
+  echo "$output"
+}
+function execute_ff_command {
+  # Execute ffmpeg or ffprobe commands
+
+  local command="$1" # Full ffmpeg or ffprobe command to execute
+  local action="$2" # Action being performed (for logging purposes)
+
+  [ $flac2mp3_debug -ge 1 ] && echo "Debug|Executing: $command" | log
+  local shortcommand="$(echo $command | sed -E 's/(.+ )?(\/[^ ]+) .*$/\2/')"
+  shortcommand=$(basename "$shortcommand")
+  unset flac2mp3_ffresult
+  # This must be a declare statement to avoid the 'Argument list too long' error with some large returned JSON (see issue #104)
+  declare -g flac2mp3_ffresult
+  flac2mp3_ffresult=$(eval "$command")
+  local return=$?
+  [ $flac2mp3_debug -ge 1 ] && echo "Debug|$shortcommand returned ${#flac2mp3_ffresult} bytes" | log
+  [ $flac2mp3_debug -ge 2 ] && [ ${#flac2mp3_ffresult} -ne 0 ] && echo "$shortcommand returned: $flac2mp3_ffresult" | awk '{print "Debug|"$0}' | log
+  if [ $return -ne 0 ]; then
+    local message=$(echo -e "[$return] Error/Warning when $action.\n$shortcommand returned: $flac2mp3_ffresult" | awk '{print "Error|"$0}')
+    echo "$message" | log
+    echo "$message" >&2
+    end_script 12
+  fi
+  return $return
+}
 function check_tracks {
   # Various sanity checks on tracks and output directory
 
@@ -998,14 +1016,10 @@ function process_tracks {
     
     # Convert the track
     echo "Info|Writing: $newTrack" | log
-    local ffcommand="nice /usr/bin/ffmpeg -loglevel $flac2mp3_ffmpeg_log -nostdin -i \"$track\" $flac2mp3_ffmpeg_opts $ffmpeg_metadata\"$tempTrack\""
-    [ $flac2mp3_debug -ge 1 ] && echo "Debug|Executing: $ffcommand" | log
-    local result
-    result=$(eval "$ffcommand")
+    local ffcommand="nice /usr/bin/ffmpeg -loglevel $flac2mp3_ffmpeg_log -nostdin -i \"$(escape_string "$track")\" $flac2mp3_ffmpeg_opts $ffmpeg_metadata \"$(escape_string "$tempTrack")\""
+    execute_ff_command "$ffcommand" "converting track: \"$track\" to \"$tempTrack\""
+
     local return=$?; [ $return -ne 0 ] && {
-      local message=$(echo -e "[$return] ffmpeg error when converting track: \"$track\" to \"$tempTrack\"\nffmpeg returned: $result" | awk '{print "Error|"$0}')
-      echo "$message" | log
-      echo "$message" >&2
       change_exit_status 13
       # Delete the temporary file if it exists
       [ -f "$tempTrack" ] && rm -f "$tempTrack"
