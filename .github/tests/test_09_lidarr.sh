@@ -60,6 +60,7 @@ test_lidarr_call_api_with_urlencode() {
 
 test_lidarr_z01_music_load() {
   fake get_trackfile_info :
+  sleep 5
   load_music
   assert_equals "$PWD/$album_dir/$test_track2" "$(echo $flac2mp3_result | jq -crM '.[] | .path?')"
 }
