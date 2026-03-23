@@ -26,7 +26,11 @@ jobs:
         run: |
           # Start Lidarr in the background
           /app/lidarr/bin/Lidarr -nobrowser -data=/config &
-          sleep 1  # Wait for Lidarr to start
+          echo "Waiting for Lidarr to start..."
+          until curl -s -I http://localhost:8686/ping > /dev/null; do
+            sleep 2
+          done
+          echo "Lidarr is up and running!"
 
       - name: Create temp directory
         run: |

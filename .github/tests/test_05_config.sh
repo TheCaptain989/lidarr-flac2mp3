@@ -14,15 +14,15 @@ setup_suite() {
 test_api_url() {
   fake get_version :
   fake get_trackfile_info :
-  check_config
+  check_config_file
   assert_equals "http://localhost:8686/api/v1" "$flac2mp3_api_url"
 }
 
 test_api_curl_failure() {
   fake get_version return 1
-  assert_status_code 17 "check_config 2>/dev/null"
+  assert_status_code 17 "check_config_file 2>/dev/null"
 }
 
 teardown_suite() {
-  unset lidarr_eventtype flac2mp3_config
+  unset lidarr_eventtype flac2mp3_arr_config
 }

@@ -3,10 +3,13 @@
 # Script to convert FLAC files to MP3 using FFmpeg
 #  Dev/test: https://github.com/TheCaptain989/lidarr-flac2mp3
 #  Prod: https://github.com/linuxserver/docker-mods/tree/lidarr-flac2mp3
+#
 # Resultant MP3s are fully tagged and retain same permissions as original file
 #
 # Legacy one-liner script for posterity
-#find "$lidarr_artist_path" -name "*.flac" -exec bash -c 'ffmpeg -loglevel warning -i "{}" -y -acodec libmp3lame -b:a 320k "${0/.flac}.mp3" && rm "{}"' {} \;
+#  find "$lidarr_artist_path" -name "*.flac" -exec bash -c 'ffmpeg -loglevel warning -i "{}" -y -acodec libmp3lame -b:a 320k "${0/.flac}.mp3" && rm "{}"' {} \;
+
+# NOTE: ShellCheck linter directives appear as comments
 
 # Dependencies:
 #  From ffmpeg package:
@@ -48,28 +51,13 @@
 # 18 - Lidarr job timeout
 # 20 - general error
 
-### Global variables
-function initialize_variables {
-  # Initialize variables
-
-  export flac2mp3_script=$(basename "$0")
-  export flac2mp3_ver="{{VERSION}}"
-  export flac2mp3_pid=$$
-  export flac2mp3_config=/config/config.xml
-  export flac2mp3_log=/config/logs/flac2mp3.txt
-  export flac2mp3_maxlogsize=1024000
-  export flac2mp3_maxlog=4
-  export flac2mp3_debug=0
-  export flac2mp3_keep=0
-  export flac2mp3_type=$(printenv | sed -n 's/_eventtype *=.*$//p')
-}
-
-### Functions
+### MAIN
 function main {
   # Main script execution
-  ### MAIN
 
   initialize_variables
+  # Setup ANSI color support (only when running in a terminal)
+  setup_ansi_colors
   process_command_line "$@"
   initialize_mode_variables
   check_log
@@ -78,12 +66,14 @@ function main {
   check_wsl
   check_eventtype
   log_script_start
-  check_config
+  check_config_file
   check_tracks
   set_ffmpeg_parameters
   process_tracks
   update_database
 }
+
+### Functions
 function usage {
   # Short usage
 
@@ -99,87 +89,141 @@ Audio conversion script designed for use with Lidarr
 Source: https://github.com/TheCaptain989/lidarr-flac2mp3
 
 Usage:
-  $0 [{-b|--bitrate} <bitrate> | {-v|--quality} <quality> | {-a|--advanced} \"<options>\" {-e|--extension} <extension>] [{-f|--file} <audio_file>] [{-k|--keep-file}] [{-o|--output} <directory>] [{-r|--regex} '<regex>'] [{-t|--tags} <taglist>] [{-l|--log} <log_file>] [{-c|--config} <config_file>] [{-d|--debug} [<level>]]
+  $flac2mp3_script [{-b|--bitrate} <bitrate> | {-v|--quality} <quality> | {-a|--advanced} \"<options>\" {-e|--extension} <extension>]
+      [{-f|--file} <audio_file>]
+      [{-k|--keep-file}]
+      [{-o|--output} <directory>]
+      [{-r|--regex} '<regex>']
+      [{-t|--tags} <taglist>]
+      [{-l|--log} <log_file>]
+      [{-c|--config} <config_file>]
+      [{-d|--debug} [<level>]]
 
   Options can also be set via the FLAC2MP3_ARGS environment variable.
   Command-line arguments override the environment variable.
 
-Options:
-  -b, --bitrate <bitrate>       Set output quality in constant bits per second
-                                [default: 320k]
-                                Ex: 160k, 240k, 300000
-  -v, --quality <quality>       Set variable bitrate; quality between 0-9
-                                0 is highest quality, 9 is lowest
-                                For more details, see:
-                                https://trac.ffmpeg.org/wiki/Encode/MP3
-  -a, --advanced \"<options>\"    Advanced ffmpeg options enclosed in quotes
-                                Specified options replace all script defaults
-                                and are sent as entered to ffmpeg for
-                                processing.
-                                For more details on valid options, see:
-                                https://ffmpeg.org/ffmpeg.html#Options
-                                WARNING: You must specify an audio codec!
-                                WARNING: Invalid options could result in script
-                                failure!
-                                Requires -e option to also be specified
-                                For more details, see:
-                                https://github.com/TheCaptain989/lidarr-flac2mp3
-  -e, --extension <extension>   File extension for output file, with or without
-                                dot
-                                Required when -a is specified!
-  -f, --file <audio_file>       The script enters batch mode, using the
-                                specified audio file as input
-                                WARNING: Do not use this argument when called
-                                from Lidarr!
-  -o, --output <directory>      Specify a destination directory for the
-                                converted audio file(s)
-                                It will be created if it does not exist.
-  -k, --keep-file               Do not delete the source file or move it to the
-                                Lidarr Recycle bin
-                                This also disables the Lidarr rescan.
-  -r, --regex  '<regex>'        Regular expression used to select input files
-                                [default: \.flac$]
-  -t, --tags <taglist>          Comma separated list of metadata tags to apply
-                                automated corrections to.
-                                Supports: title, disc, genre
-  -l, --log <log_file>          log filename
-                                [default: /config/log/flac2mp3.txt]
-  -c, --config <config_file>    Lidarr XML configuration file
-                                [default: ./config/config.xml]
-  -d, --debug [<level>]         Enable debug logging
-                                level is optional, between 1-3
-                                1 is lowest, 3 is highest
-                                [default: 1]
-      --help                    Display this help and exit
-      --version                 Display script version and exit
+Options and Arguments:
+  -b, --bitrate <bitrate>
+                  Set output quality in constant bits per second
+                  Ex: 160k, 240k, 300000
+                  [default: 320k]
+
+  -v, --quality <quality>
+                  Set output variable bit rate; quality between 0-9
+                  0 is highest quality, 9 is lowest
+                  For more details, see: https://trac.ffmpeg.org/wiki/Encode/MP3
+
+  -a, --advanced \"<options>\"
+                  Advanced ffmpeg options enclosed in quotes
+                  Specified options replace all script defaults and are sent directly to ffmpeg.
+                  For more details on valid options, see: https://ffmpeg.org/ffmpeg.html#Options
+                  WARNING: You must specify an audio codec!
+                  WARNING: Invalid options could result in script failure!
+                  Note: Requires -e option to also be specified 
+                  For more details, see: https://github.com/TheCaptain989/lidarr-flac2mp3#technical-notes-on-advanced-options
+
+  -e, --extension <extension>
+                  File extension for output file, with or without dot
+                  Note: Requires -a option to also be specified
+
+  -f, --file <audio_file>
+                  If included, the script enters Batch mode and converts the specified audio file
+                  WARNING: Do not use this argument when called from Lidarr!
+
+  -o, --output <directory>
+                  Specify a destination directory for the converted audio file(s)
+                  It will be created if it does not exist.
+
+  -k, --keep-file
+                  Do not delete the source file or move it to the Lidarr Recycle bin
+                  This also disables importing the new files into Lidarr after conversion.
+
+  -r, --regex '<regex>'
+                  Regular expression used to select input files
+                  [default: \\.flac$]
+
+  -t, --tags <taglist>
+                  Comma separated list of metadata tags to apply automated corrections to.
+                  Supports: title, disc, genre
+
+  -l, --log <log_file>
+                  Log filename
+                  [default: /config/log/flac2mp3.txt]
+
+  -c, --config <config_file>
+                  Lidarr XML configuration file
+                  [default: ./config/config.xml]
+
+  -d, --debug [<level>]
+                  Enable debug logging
+                  Level is optional:
+                    1 (low)
+                    2 includes JSON output
+                    3 contains even more JSON output
+                  [default: 1]
+
+      --no-ansi
+                  Force disable ANSI color codes in terminal output
+
+      --help
+                  Display this help and exit
+
+      --version
+                  Display script version and exit
+
+Batch Mode:
+  Batch mode allows the script to be executed independently of Lidarr.  It processes the
+  file specified on the command line and ignores any environment variables that are normally
+  expected.
 
 Examples:
-  $flac2mp3_script -b 320k           # Output 320 kbit/s MP3 (non-VBR; same as
-                                  default behavior)
-  $flac2mp3_script -v 0              # Output variable bitrate MP3, VBR 220-260
-                                  kbit/s
-  $flac2mp3_script -d -b 160k        # Enable debugging level 1 and output a
-                                  160 kbit/s MP3
-  $flac2mp3_script -r '\\\\.[^.]*\$'    # Convert any file to MP3 (not just FLAC)
+  $flac2mp3_script -b 320k
+                  # Output 320 kbit/s MP3 (non-VBR; same as default behavior)
+
+  $flac2mp3_script -v 0
+                  # Output variable bitrate MP3, VBR 220-260 kbit/s
+
+  $flac2mp3_script -d -b 160k
+                  # Enable debugging level 1 and output a 160 kbit/s MP3
+
+  $flac2mp3_script -r '\\\\.[^.]*\$'
+                  # Convert any file to MP3 (not just FLAC)
+
   $flac2mp3_script -a \"-c:v libtheora -map 0 -q:v 10 -c:a libopus -b:a 192k\" -e .opus
-                                # Convert to Opus format, 192 kbit/s, cover art
+                  # Convert to Opus format, 192 kbit/s, cover art
+
   $flac2mp3_script -a \"-vn -c:a libopus -b:a 192K\" -e .opus -r '\.mp3\$'
-                                # Convert .mp3 files to Opus format, 192 kbit/s
-                                  no cover art
+                  # Convert .mp3 files to Opus format, 192 kbit/s, no cover art
+
   $flac2mp3_script -a \"-y -map 0 -c:a aac -b:a 240K -c:v copy\" -e m4a
-                                # Convert to M4A format, using AAC 240 kbit/s
-                                  audio, cover art, overwrite file
+                  # Convert to M4A format, using AAC 240 kbit/s audio, cover art, overwrite file
+
   $flac2mp3_script-a \"-c:a flac -sample_fmt s16 -ar 44100\" -e flac
-                                # Resample to 16-bit FLAC
+                  # Resample to 16-bit FLAC
+
   $flac2mp3_script -f \"/path/to/audio/a-ha/Hunting High and Low/01 Take on Me.flac\"
-                                # Batch Mode
-                                  Output 320 kbit/s MP3
+                  # Batch Mode
+                  # Output 320 kbit/s MP3
+  
   $flac2mp3_script -o \"/path/to/audio\" -k
-                                # Place the converted file(s) in specified
-                                  directory and do not delete the original
-                                  audio file(s)
+                  # Place the converted file(s) in specified directory and do not delete the
+                  # original audio file(s)
 "
   echo "$usage"
+}
+function initialize_variables {
+  # Initialize global variables
+
+  export flac2mp3_script=$(basename "$0")
+  export flac2mp3_ver="{{VERSION}}"
+  export flac2mp3_pid=$$
+  export flac2mp3_arr_config=/config/config.xml
+  export flac2mp3_log=/config/logs/flac2mp3.txt
+  export flac2mp3_maxlogsize=1024000
+  export flac2mp3_maxlog=4
+  export flac2mp3_debug=0
+  export flac2mp3_keep=0
+  export flac2mp3_type=$(printenv | sed -n 's/_eventtype *=.*$//p')
 }
 function process_command_line {
   # Process arguments, either from the command line or from the environment variable
@@ -220,13 +264,18 @@ function process_command_line {
       ;;
       --version )
         # Display version
-        echo "${flac2mp3_script} ${flac2mp3_ver/{{VERSION\}\}/unknown}"
+        echo_ansi "${flac2mp3_script} ${flac2mp3_ver/{{VERSION\}\}/unknown}"
         exit 0
+      ;;
+      --no-ansi )
+        # Disable all ANSI colors in output
+        export flac2mp3_noansi="true"
+        shift
       ;;
       -l|--log )
         # Log file
         if [ -z "$2" ] || [ ${2:0:1} = "-" ]; then
-          echo "Error|Invalid option: $1 requires an argument." >&2
+          echo_ansi "Error|Invalid option: $1 requires an argument." >&2
           usage
           exit 3
         fi
@@ -236,7 +285,7 @@ function process_command_line {
       -f|--file )
         # Batch Mode
         if [ -z "$2" ] || [ ${2:0:1} = "-" ]; then
-          echo "Error|Invalid option: $1 requires an argument." >&2
+          echo_ansi "Error|Invalid option: $1 requires an argument." >&2
           usage
           exit 3
         fi
@@ -248,18 +297,18 @@ function process_command_line {
       -b|--bitrate )
         # Set constant bit rate
         if [ -n "$flac2mp3_vbrquality" ]; then
-          echo "Error|Both -b and -v options cannot be set at the same time." >&2
+          echo_ansi "Error|Both -b and -v options cannot be set at the same time." >&2
           usage
           exit 3
         elif [ -n "$flac2mp3_ffmpegadv" -o -n "$flac2mp3_extension" ]; then
-          echo "Error|The -a and -e options cannot be set at the same time as either -v or -b options." >&2
+          echo_ansi "Error|The -a and -e options cannot be set at the same time as either -v or -b options." >&2
           usage
           exit 3
         elif [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
           export flac2mp3_bitrate="$2"
           shift 2
         else
-          echo "Error|Invalid option: $1 requires an argument." >&2
+          echo_ansi "Error|Invalid option: $1 requires an argument." >&2
           usage
           exit 3
         fi
@@ -267,18 +316,18 @@ function process_command_line {
       -v|--quality )
         # Set variable quality
         if [ -n "$flac2mp3_bitrate" ]; then
-          echo "Error|Both -v and -b options cannot be set at the same time." >&2
+          echo_ansi "Error|Both -v and -b options cannot be set at the same time." >&2
           usage
           exit 3
         elif [ -n "$flac2mp3_ffmpegadv" -o -n "$flac2mp3_extension" ]; then
-          echo "Error|The -a and -e options cannot be set at the same time as either -v or -b options." >&2
+          echo_ansi "Error|The -a and -e options cannot be set at the same time as either -v or -b options." >&2
           usage
           exit 3
         elif [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
           export flac2mp3_vbrquality="$2"
           shift 2
         else
-          echo "Error|Invalid option: $1 requires an argument." >&2
+          echo_ansi "Error|Invalid option: $1 requires an argument." >&2
           usage
           exit 3
         fi
@@ -286,14 +335,14 @@ function process_command_line {
       -a|--advanced )
         # Set advanced options
         if [ -n "$flac2mp3_vbrquality" -o -n "$flac2mp3_bitrate" ]; then
-          echo "Error|The -a and -e options cannot be set at the same time as either -v or -b options." >&2
+          echo_ansi "Error|The -a and -e options cannot be set at the same time as either -v or -b options." >&2
           usage
           exit 3
         elif [ -n "$2" ]; then
           export flac2mp3_ffmpegadv="$2"
           shift 2
         else
-          echo "Error|Invalid option: $1 requires an argument." >&2
+          echo_ansi "Error|Invalid option: $1 requires an argument." >&2
           usage
           exit 3
         fi
@@ -301,14 +350,14 @@ function process_command_line {
       -e|--extension )
         # Set file extension
         if [ -n "$flac2mp3_vbrquality" -o -n "$flac2mp3_bitrate" ]; then
-          echo "Error|The -a and -e options cannot be set at the same time as either -v or -b options." >&2
+          echo_ansi "Error|The -a and -e options cannot be set at the same time as either -v or -b options." >&2
           usage
           exit 3
         elif [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
           export flac2mp3_extension="$2"
           shift 2
         else
-          echo "Error|Invalid option: $1 requires an argument." >&2
+          echo_ansi "Error|Invalid option: $1 requires an argument." >&2
           usage
           exit 3
         fi
@@ -318,7 +367,7 @@ function process_command_line {
       -o|--output )
         # Set output directory
         if [ -z "$2" ] || [ ${2:0:1} = "-" ]; then
-          echo "Error|Invalid option: $1 requires an argument." >&2
+          echo_ansi "Error|Invalid option: $1 requires an argument." >&2
           usage
           exit 3
         fi
@@ -335,7 +384,7 @@ function process_command_line {
       -r|--regex )
         # Sets the regex used to match input files
         if [ -z "$2" ] || [ ${2:0:1} = "-" ]; then
-          echo "Error|Invalid option: $1 requires an argument." >&2
+          echo_ansi "Error|Invalid option: $1 requires an argument." >&2
           usage
           exit 3
         fi
@@ -345,7 +394,7 @@ function process_command_line {
       -t|--tags )
         # Metadata tags to correct
         if [ -z "$2" ] || [ ${2:0:1} = "-" ]; then
-          echo "Error|Invalid option: $1 requires an argument." >&2
+          echo_ansi "Error|Invalid option: $1 requires an argument." >&2
           usage
           exit 3
         fi
@@ -353,19 +402,19 @@ function process_command_line {
         shift 2
       ;;
       -c|--config )
-        # Liarr XML configuration file
+        # Lidarr XML configuration file
         if [ -z "$2" ] || [ ${2:0:1} = "-" ]; then
-          echo "Error|Invalid option: $1 requires an argument." >&2
+          echo_ansi "Error|Invalid option: $1 requires an argument." >&2
           usage
           exit 3
         fi
         # Overrides default /config/config.xml
-        export flac2mp3_config="$2"
+        export flac2mp3_arr_config="$2"
         shift 2
       ;;
       -*)
         # Unknown option
-        echo "Error|Unknown option: $1" >&2
+        echo_ansi "Error|Unknown option: $1" >&2
         usage
         exit 20
       ;;
@@ -378,7 +427,7 @@ function process_command_line {
 
   # Test for either -a and -e, but not both: logical XOR = non-equality
   if [ "${flac2mp3_ffmpegadv:+data}" != "${flac2mp3_extension:+data}" ]; then
-    echo "Error|The -a and -e options must be specified together." >&2
+    echo_ansi "Error|The -a and -e options must be specified together." >&2
     usage
     exit 3
   fi
@@ -388,6 +437,44 @@ function process_command_line {
 
   # Set default new track extension
   export flac2mp3_extension="${flac2mp3_extension:-.mp3}"
+}
+function setup_ansi_colors {
+  # Setup ANSI color codes and determine when to use them.
+  # Colors should only be used when the script is writing to an interactive terminal.
+
+  export ansi_red='\033[0;31m'
+  export ansi_green='\033[0;32m'
+  export ansi_yellow='\033[0;33m'
+  export ansi_cyan='\033[0;36m'
+  export ansi_nc='\033[0m' # No Color
+}
+function strip_ansi_codes {
+  # Remove ANSI escape sequences from stdin (e.g., before writing to log files)
+  sed -E 's/\x1B\[[0-9;]*[mK]//g'
+}
+function echo_ansi {
+  # Apply ANSI colors for terminal output only.
+  # Colors are based on the message prefix (Error|, Warn|, Debug|).
+  
+  local msg="$*"
+  local prefix="${msg%%|*}"
+  local color=""
+  case "$prefix" in
+    Error) color="$ansi_red" ;;
+    Warn)  color="$ansi_yellow" ;;
+    Debug) color="$ansi_cyan" ;;
+  esac
+  
+  local use_color=false
+  if [ -t 1 -a -t 2 ] && [ -z "$flac2mp3_noansi" ]; then
+    use_color=true
+  fi
+  
+  if $use_color && [ -n "$color" ]; then
+    builtin echo -e "${color}${msg}${ansi_nc}"
+  else
+    builtin echo "$msg"
+  fi
 }
 function initialize_mode_variables {
   # Sets mode specific variables
@@ -403,7 +490,7 @@ function initialize_mode_variables {
     [ -z "$flac2mp3_tracks" ] && export flac2mp3_tracks="$lidarr_trackfile_path"
   else
     # Called in an unexpected way
-    echo -e "Error|Unknown or missing '*_eventtype' environment variable: ${flac2mp3_type}\nNot calling from Lidarr? Try using Batch Mode option: -f <file>" >&2
+    echo_ansi "Error|Unknown or missing *_eventtype environment variable: ${flac2mp3_type}\nNot calling from Lidarr? Try using Batch Mode option: -f <file>" >&2
     usage
     exit 7
   fi
@@ -414,10 +501,14 @@ function log {(
   # Must include whole function in subshell for read to work!
 
   while read -r; do
+    # Ensure ANSI escape sequences are stripped from log output
+    local line="$REPLY"
+    line="$(printf '%s' "$line" | strip_ansi_codes)"
+
     # shellcheck disable=2046
-    echo $(date +"%Y-%m-%d %H:%M:%S.%1N")\|"[$flac2mp3_pid]$REPLY" >>"$flac2mp3_log"
-    local flac2mp3_filesize=$(stat -c %s "$flac2mp3_log")
-    if [ $flac2mp3_filesize -gt $flac2mp3_maxlogsize ]; then
+    echo $(date +"%Y-%m-%d %H:%M:%S.%1N")\|"[$flac2mp3_pid]$line" >>"$flac2mp3_log"
+    local filesize=$(stat -c %s "$flac2mp3_log")
+    if [ $filesize -gt $flac2mp3_maxlogsize ]; then
       for i in $(seq $((flac2mp3_maxlog-1)) -1 0); do
         [ -f "${flac2mp3_log::-4}.$i.txt" ] && mv "${flac2mp3_log::-4}."{$i,$((i+1))}".txt"
       done
@@ -447,7 +538,7 @@ function get_trackfile_info {
   # shellcheck disable=SC2154
   call_api 0 "Getting track file info for album id $lidarr_album_id." "GET" "trackFile" "albumId=$lidarr_album_id"
   local json_test="$(echo $flac2mp3_result | jq -crM '.[].id?')"
-  [  "$json_test" != "null" ] && [ "$json_test" != "" ]
+  [ "$json_test" != "null" ] && [ "$json_test" != "" ]
   return
 }
 function check_job {
@@ -462,6 +553,7 @@ function check_job {
   
   local jobid="$1" # Job ID to check
 
+  local i
   for ((i=1; i <= 15; i++)); do
     call_api 0 "Checking job $jobid completion." "GET" "command/$jobid"
     local api_return=$?; [ $api_return -ne 0 ] && {
@@ -490,14 +582,14 @@ function delete_track {
 
   local track_id="$1"  # ID of track to delete
 
-  call_api 0 "Deleting or recycling \"$track\"." "DELETE" "trackFile/$track_id"
+  call_api 0 "Deleting or recycling '$track'." "DELETE" "trackFile/$track_id"
   return
 }
 function rename_track {
   # Rename the temporary file to the new track name
 
   local orginalname="$1" # Original track file to rename
-  local newname="$2" # New name of the track file
+  local newname="$2"     # New name of the track file
 
   [ $flac2mp3_debug -ge 1 ] && echo "Debug|Renaming \"$orginalname\" to \"$newname\"" | log
   local result
@@ -505,7 +597,7 @@ function rename_track {
   local return=$?; [ $return -ne 0 ] && {
     local message=$(echo -e "[$return] Unable to rename temp track: \"$orginalname\" to: \"$newname\".\nmv returned: $result" | awk '{print "Error|"$0}')
     echo "$message" | log
-    echo "$message" >&2
+    echo_ansi "$message" >&2
   }
   return $return
 }
@@ -515,7 +607,7 @@ function get_import_info {
   # shellcheck disable=SC2154
   call_api 1 "Getting list of files that can be imported." "GET" "manualimport" "artistId=$lidarr_artist_id" "folder=$lidarr_artist_path" "filterExistingFiles=true" "replaceExistingFiles=false"
   local json_test="$(echo $flac2mp3_result | jq -crM '.[]? | .tracks?')"
-  [  "$json_test" != "null" ] && [ "$json_test" != "" ] && [ "$json_test" != "[]" ]
+  [ "$json_test" != "null" ] && [ "$json_test" != "" ] && [ "$json_test" != "[]" ]
   return
 }
 function import_tracks {
@@ -531,8 +623,8 @@ function ffprobe {
 
   local trackfile="$1" # Track file to inspect
   
-  local ffcommand="/usr/bin/ffprobe -hide_banner -loglevel $flac2mp3_ffmpeg_log -print_format json=compact=1 -show_format -show_entries \"format=tags : format_tags=title,disc,genre\" -i \"$(escape_string "$trackfile")\""
-  execute_ff_command "$ffcommand" "inspecting file: \"$trackfile\""
+  local ffcommand="/usr/bin/ffprobe"
+  execute_ff_command "inspecting file: '$trackfile'" "$ffcommand" -hide_banner -loglevel $flac2mp3_ffmpeg_log -print_format json=compact=1 -show_format -show_entries "format=tags : format_tags=title,disc,genre" -i "$trackfile"
 
   unset flac2mp3_ffprobe_json
   declare -g flac2mp3_ffprobe_json
@@ -564,19 +656,19 @@ function check_log {
 
   # Check that log path exists
   if [ ! -d "$(dirname $flac2mp3_log)" ]; then
-    [ $flac2mp3_debug -ge 1 ] && echo "Debug|Log file path does not exist: '$(dirname $flac2mp3_log)'. Using log file in current directory."
+    [ $flac2mp3_debug -ge 1 ] && echo_ansi "Debug|Log file path does not exist: '$(dirname $flac2mp3_log)'. Using log file in current directory."
     export flac2mp3_log=./flac2mp3.txt
   fi
 
   # Check that the log file exists
   if [ ! -f "$flac2mp3_log" ]; then
-    echo "Info|Creating a new log file: $flac2mp3_log"
+    echo_ansi "Info|Creating a new log file: $flac2mp3_log"
     touch "$flac2mp3_log"
   fi
 
   # Check that the log file is writable
   if [ ! -w "$flac2mp3_log" ]; then
-    echo "Error|Log file '$flac2mp3_log' is not writable or does not exist." >&2
+    echo_ansi "Error|Log file '$flac2mp3_log' is not writable or does not exist." >&2
     export flac2mp3_log=/dev/null
     change_exit_status 4
   fi
@@ -588,7 +680,7 @@ function check_required_binaries {
     if [ ! -f "$flac2mp3_file" ]; then
       local message="Error|$flac2mp3_file is required by this script"
       echo "$message" | log
-      echo "$message" >&2
+      echo_ansi "$message" >&2
       end_script 2
     fi
   done
@@ -600,18 +692,18 @@ function log_first_debug_messages {
   if [ $flac2mp3_debug -ge 1 ]; then
     local message="Debug|Running ${flac2mp3_script} version ${flac2mp3_ver/{{VERSION\}\}/unknown} with debug logging level ${flac2mp3_debug}."
     echo "$message" | log
-    echo "$message" >&2
+    echo_ansi "$message" >&2
   fi
 
   # Log command line parameters
   if [ -n "$flac2mp3_prelogmessagedebug" ]; then
-    # flac2mp3_prelogmessagedebug is set above, before argument processing
+    # flac2mp3_prelogmessagedebug is set in process_command_line
     [ $flac2mp3_debug -ge 1 ] && echo "$flac2mp3_prelogmessagedebug" | log
   fi
 
   # Log FLAC2MP3_ARGS usage
   if [ -n "$flac2mp3_prelogmessage" ]; then
-    # flac2mp3_prelogmessage is set above, before argument processing
+    # flac2mp3_prelogmessage is set in process_command_line
     echo "$flac2mp3_prelogmessage" | log
     [ $flac2mp3_debug -ge 1 ] && echo "Debug|FLAC2MP3_ARGS: ${FLAC2MP3_ARGS}" | log
   fi
@@ -621,12 +713,12 @@ function log_first_debug_messages {
   [ $flac2mp3_debug -ge 2 ] && printenv | sort | sed 's/^/Debug|/' | log
 }
 function check_eventtype {
-  # Check for invalid _eventtypes and handle test event
+  # Check for invalid _eventtype and handle test event
 
   if [[ "$lidarr_eventtype" =~ Grab|Rename|TrackRetag|ArtistAdd|ArtistDeleted|AlbumDeleted|ApplicationUpdate|HealthIssue ]]; then
     local message="Error|${flac2mp3_type^} event ${lidarr_eventtype} is not supported. Exiting."
     echo "$message" | log
-    echo "$message" >&2
+    echo_ansi "$message" >&2
     end_script 20
   fi
 
@@ -645,9 +737,9 @@ function check_wsl {
   if [ -n "$WSL_DISTRO_NAME" ]; then
     [ $flac2mp3_debug -ge 1 ] && echo "Debug|Running in virtual WSL $WSL_DISTRO_NAME distribution." | log
     # Adjust config file location to WSL default
-    if [ ! -f "$flac2mp3_config" ]; then
-      export flac2mp3_config="/mnt/c/ProgramData/${flac2mp3_type^}/config.xml"
-      [ $flac2mp3_debug -ge 1 ] && echo "Debug|Will try to use the default WSL configuration file '$flac2mp3_config'" | log
+    if [ ! -f "$flac2mp3_arr_config" ]; then
+      export flac2mp3_arr_config="/mnt/c/ProgramData/${flac2mp3_type^}/config.xml"
+      [ $flac2mp3_debug -ge 1 ] && echo "Debug|Will try to use the default WSL configuration file '$flac2mp3_arr_config'" | log
     fi
   fi
 }
@@ -680,20 +772,20 @@ function log_script_start {
     [ $flac2mp3_debug -ge 1 ] && echo "Debug|Switching to batch mode. Input filename: ${flac2mp3_tracks}" | log
   fi
 }
-function check_config {
+function check_config_file {
   # Check for config file
 
   if [ "$flac2mp3_type" = "batch" ]; then
     [ $flac2mp3_debug -ge 1 ] && echo "Debug|Not using config file in batch mode." | log
-  elif [ -f "$flac2mp3_config" ]; then
+  elif [ -f "$flac2mp3_arr_config" ]; then
     # Read Lidarr config.xml
-    [ $flac2mp3_debug -ge 1 ] && echo "Debug|Reading from ${flac2mp3_type^} config file '$flac2mp3_config'" | log
+    [ $flac2mp3_debug -ge 1 ] && echo "Debug|Reading from ${flac2mp3_type^} config file '$flac2mp3_arr_config'" | log
     while read_xml; do
       [[ $flac2mp3_xml_entity = "Port" ]] && local port=$flac2mp3_xml_content
       [[ $flac2mp3_xml_entity = "UrlBase" ]] && local urlbase=$flac2mp3_xml_content
       [[ $flac2mp3_xml_entity = "BindAddress" ]] && local bindaddress=$flac2mp3_xml_content
       [[ $flac2mp3_xml_entity = "ApiKey" ]] && export flac2mp3_apikey=$flac2mp3_xml_content
-    done < "$flac2mp3_config"
+    done < "$flac2mp3_arr_config"
 
     # Allow use of environment variables from https://github.com/Lidarr/Lidarr/pull/4812
     local port_var="${flac2mp3_type^^}__SERVER__PORT"
@@ -725,7 +817,7 @@ function check_config {
       # curl errored out. API calls are really broken at this point.
       local message="Error|[$return] Unable to get ${flac2mp3_type^} version information. It is not safe to continue."
       echo "$message" | log
-      echo "$message" >&2
+      echo_ansi "$message" >&2
       end_script 17
     }
     export flac2mp3_version="$(echo $flac2mp3_result | jq -crM .version)"
@@ -737,13 +829,13 @@ function check_config {
     else
       local message="Warn|Unable to get trackfile info for album ID $lidarr_album_id"
       echo "$message" | log
-      echo "$message" >&2
+      echo_ansi "$message" >&2
     fi
   else
     # No config file means we can't call the API.  Best effort at this point.
-    local message="Warn|Unable to locate ${flac2mp3_type^} config file: '$flac2mp3_config'"
+    local message="Warn|Unable to locate ${flac2mp3_type^} config file: '$flac2mp3_arr_config'"
     echo "$message" | log
-    echo "$message" >&2
+    echo_ansi "$message" >&2
   fi
 }
 function call_api {
@@ -753,55 +845,69 @@ function call_api {
   local message="$2" # Message to log
   local method="$3" # HTTP method to use (GET, POST, PUT, DELETE)
   local endpoint="$4" # API endpoint to call
-  local data # Data to send with the request. All subsequent arguments are treated as data.
+  local -a curl_data_args=() # Use array instead of string for safer argument passing
 
   # Process remaining data values
   shift 4
   while (( "$#" )); do
-    # Escape double quotes in data parameter
-    local param="${1//\"/\\\"}"
-    case "$param" in
+    case "$1" in
       "{"*|"["*)
-        data+=" --json \"$param\""
-        shift
+        curl_data_args+=(--json "$1")
       ;;
       *=*)
-        data+=" --data-urlencode \"$param\""
-        shift
+        curl_data_args+=(--data-urlencode "$1")
       ;;
       *)
-        data+=" --data-raw \"$param\""
-        shift
+        curl_data_args+=(--data-raw "$1")
       ;;
     esac
+    shift
   done
 
+  local -a curl_args=(
+    -s
+    --fail-with-body
+    -H "X-Api-Key: $flac2mp3_apikey"
+    -H "Content-Type: application/json"
+    -H "Accept: application/json"
+  )
+
   local url="$flac2mp3_api_url/$endpoint"
-  [ $flac2mp3_debug -ge 1 ] && echo "Debug|$message Calling ${flac2mp3_type^} API using $method and URL '$url'${data:+ with$data}" | log
+  local data_info=""
+  [ ${#curl_data_args[@]} -gt 0 ] && data_info=" with data: ${curl_data_args[*]}"
+  [ $flac2mp3_debug -ge 1 ] && echo "Debug|$message Calling ${flac2mp3_type^} API using $method and URL '$url'$data_info" | log
   # Special handling of GET method
   if [ "$method" = "GET" ]; then
-    method="-G"
+    curl_args+=(-G)
   else
-    method="-X $method"
+    curl_args+=(-X "$method")
   fi
-  local curl_cmd="curl -s --fail-with-body -H \"X-Api-Key: $flac2mp3_apikey\" -H \"Content-Type: application/json\" -H \"Accept: application/json\" ${data:+$data} $method \"$url\""
-  [ $flac2mp3_debug -ge 2 ] && echo "Debug|Executing: $curl_cmd" | sed -E 's/(X-Api-Key: )[^"]+/\1[REDACTED]/' | log
+  # Add data arguments and url to curl arguments array
+  curl_args+=("${curl_data_args[@]}")
+  curl_args+=(--url "$url")
+  [ $flac2mp3_debug -ge 2 ] && echo "Debug|Executing: curl ${curl_args[*]}" | sed -E 's/(X-Api-Key: )[^ ]+/\1[REDACTED]/' | log
   unset flac2mp3_result
   declare -g flac2mp3_result
 
   # Retry up to five times if database is locked
-  local i=0
+  local i
   for ((i=0; i <= 5; i++)); do
-    flac2mp3_result=$(eval "$curl_cmd")
-    local curl_return=$?; [ $curl_return -ne 0 ] && {
-      local message=$(echo -e "[$curl_return] curl error when calling: \"$url\"${data:+ with$data}\nWeb server returned: $(echo $flac2mp3_result | jq -jcM 'if type=="array" then map(.errorMessage) | join(", ") else (if has("title") then "[HTTP \(.status?)] \(.title?) \(.errors?)" elif has("message") then .message else "Unknown JSON format." end) end')" | awk '{print "Error|"$0}')
-      echo "$message" | log
-      echo "$message" >&2
-      break
-    }
-    # Exit loop if database is not locked, else wait
+    flac2mp3_result=$(curl "${curl_args[@]}")
+    local curl_return=$?
+    # If database is locked, log and loop
     if wait_if_locked; then
+      if [ $curl_return -ne 0 ]; then
+        local error_message="$(echo $flac2mp3_result | jq -jcM 'if type=="array" then map(.errorMessage) | join(", ") else (if has("title") then "[HTTP \(.status?)] \(.title) \(.errors?)" elif has("message") then .message else "Unknown JSON format." end) end')"
+        local message=$(echo -e "[$curl_return] curl error when calling: \"$url\"$data_info\nWeb server returned: $error_message" | awk '{print "Error|"$0}')
+        echo "$message" | log
+        echo_ansi "$message" >&2
+      fi
       break
+    fi
+    if [ $i -eq 5 ]; then
+      local message="Error|Database is locked after 5 attempts when calling ${flac2mp3_type^} API using $method and URL '$url'${data:+ with ${data[@]}}"
+      echo "$message" | log
+      echo_ansi "$message" >&2
     fi
   done
 
@@ -814,8 +920,8 @@ function wait_if_locked {
   # Wait 1 minute if database is locked
 
   # Exit codes:
-  #  0 - Database is locked
-  #  1 - Database is not locked
+  #  0 - Database is not locked
+  #  1 - Database is locked
 
   if [[ "$(echo $flac2mp3_result | jq -jcM '.message?')" =~ database\ is\ locked ]]; then
     local return=1
@@ -839,23 +945,31 @@ function escape_string {
 function execute_ff_command {
   # Execute ffmpeg or ffprobe commands
 
-  local command="$1" # Full ffmpeg or ffprobe command to execute
-  local action="$2" # Action being performed (for logging purposes)
+  local action="$1" # Action being performed (for logging purposes)
+  local command="$2" # Full ffmpeg or ffprobe command to execute
+  local -a ff_args=() # Use array instead of string for safer argument passing
 
-  [ $flac2mp3_debug -ge 1 ] && echo "Debug|Executing: $command" | log
+  # Process remaining data values
+  shift 2
+  while (( "$#" )); do
+    ff_args+=("$1")
+    shift
+  done
+
+  [ $flac2mp3_debug -ge 1 ] && echo "Debug|Executing: $command ${ff_args[*]}" | log
   local shortcommand="$(echo $command | sed -E 's/(.+ )?(\/[^ ]+) .*$/\2/')"
   shortcommand=$(basename "$shortcommand")
   unset flac2mp3_ffresult
-  # This must be a declare statement to avoid the 'Argument list too long' error with some large returned JSON (see issue #104)
+  # This must be a declare statement to avoid the 'Argument list too long' error with some large returned JSON
   declare -g flac2mp3_ffresult
-  flac2mp3_ffresult=$(eval "$command")
+  flac2mp3_ffresult=$($command "${ff_args[@]}")
   local return=$?
   [ $flac2mp3_debug -ge 1 ] && echo "Debug|$shortcommand returned ${#flac2mp3_ffresult} bytes" | log
   [ $flac2mp3_debug -ge 2 ] && [ ${#flac2mp3_ffresult} -ne 0 ] && echo "$shortcommand returned: $flac2mp3_ffresult" | awk '{print "Debug|"$0}' | log
   if [ $return -ne 0 ]; then
-    local message=$(echo -e "[$return] Error/Warning when $action.\n$shortcommand returned: $flac2mp3_ffresult" | awk '{print "Error|"$0}')
+    local message=$(echo -e "[$return] Error/Warning when $action.\n$shortcommand returned: $(echo "$flac2mp3_ffresult" | jq -RcrM '. as $raw | try ($raw | fromjson | .warnings[]) catch $raw')" | awk '{print "Error|"$0}')
     echo "$message" | log
-    echo "$message" >&2
+    echo_ansi "$message" >&2
     end_script 12
   fi
   return $return
@@ -867,15 +981,15 @@ function check_tracks {
   if [ -z "$flac2mp3_tracks" ]; then
     local message="Error|No audio tracks were detected or specified!"
     echo "$message" | log
-    echo "$message" >&2
+    echo_ansi "$message" >&2
     end_script 1
   fi
 
   # Check if source audio file exists
   if [ "$flac2mp3_type" = "batch" -a ! -f "$flac2mp3_tracks" ]; then
-    local message="Error|Input file not found: \"$flac2mp3_tracks\""
+    local message="Error|Input file not found: '$flac2mp3_tracks'"
     echo "$message" | log
-    echo "$message" >&2
+    echo_ansi "$message" >&2
     end_script 5
   fi
 
@@ -886,7 +1000,7 @@ function check_tracks {
     local return=$?; [ $return -ne 0 ] && {
       local message="Error|[$return] mkdir returned an error. Unable to create output directory."
       echo "$message" | log
-      echo "$message" >&2
+      echo_ansi "$message" >&2
       end_script 6
     }
   fi
@@ -930,9 +1044,9 @@ function process_tracks {
 
     # Check that track exists
     if [ ! -f  "$track" ]; then
-      local message="Error|Track file does not exist: \"$track\""
+      local message="Error|Track file does not exist: '$track'"
       echo "$message" | log
-      echo "$message" >&2
+      echo_ansi "$message" >&2
       continue
     fi
 
@@ -949,20 +1063,20 @@ function process_tracks {
       local tempTrack="${flac2mp3_output}${tempTrack##*/}"
       local newTrack="${flac2mp3_output}${newTrack##*/}"
     fi
-    [ $flac2mp3_debug -ge 1 ] && echo "Debug|Using temporary file \"$tempTrack\"" | log
+    [ $flac2mp3_debug -ge 1 ] && echo "Debug|Using temporary file '$tempTrack'" | log
     
     # Check for same track name (see issue #54)
     if [ "$newTrack" = "$track" -a $flac2mp3_keep -eq 1 ]; then
       local message="Error|The original track name and new name are the same, but the keep option was specified! Skipping track: $track"
       echo "$message" | log
-      echo "$message" >&2
+      echo_ansi "$message" >&2
       change_exit_status 11
       continue
     fi
     
     # Set metadata options to fix tags if asked
     if [ -n "$flac2mp3_tags" ]; then
-      local ffmpeg_metadata=""
+      local metadata=""
       [ $flac2mp3_debug -ge 1 ] && echo "Debug|Detecting and fixing common problems with the following metadata tags: $flac2mp3_tags" | log
 
       # Get track metadata
@@ -976,7 +1090,7 @@ function process_tracks {
               [ $flac2mp3_debug -ge 1 ] && echo "Debug|Original metadata: title=$tag_title" | log
               local pattern='\([^)]+\)$'      # Rough way to limit editing metadata for every track
               if [[ "$tag_title" =~ $pattern ]]; then
-                ffmpeg_metadata+="-metadata title=\"$(echo "$tag_title" | sed -r 's/\((live|acoustic|demo|[^)]*((re)?mix(es)?|dub|edit|version))\)$/[\1]/i')\" "
+                metadata+="-metadata title=\"$(echo "$tag_title" | sed -r 's/\((live|acoustic|demo|[^)]*((re)?mix(es)?|dub|edit|version))\)$/[\1]/i')\" "
               fi
             ;;
             disc )
@@ -984,7 +1098,7 @@ function process_tracks {
               local tag_disc=$(echo "$flac2mp3_ffprobe_json" | jq -crM '.format.tags | to_entries[] | select(.key | match("disc"; "i")).value')
               [ $flac2mp3_debug -ge 1 ] && echo "Debug|Original metadata: disc=$tag_disc" | log
               if [ "$tag_disc" = "1" ]; then
-                ffmpeg_metadata+='-metadata disc="1/1" '
+                metadata+='-metadata disc="1/1" '
               fi
             ;;
             genre )
@@ -994,43 +1108,45 @@ function process_tracks {
               # Only trigger on multiple genres
               if [[ $tag_genre =~ \; ]]; then
                 case "$tag_genre" in
-                  *Synth-Pop*) ffmpeg_metadata+='-metadata genre="Electronica & Dance" ' ;;
-                  *Pop*) ffmpeg_metadata+='-metadata genre="Pop" ' ;;
-                  *Indie*) ffmpeg_metadata+='-metadata genre="Alternative & Indie" ' ;;
-                  *Industrial*) ffmpeg_metadata+='-metadata genre="Industrial Rock" ' ;;
-                  *Electronic*) ffmpeg_metadata+='-metadata genre="Electronica & Dance" ' ;;
-                  *Punk*|*Alternative*) ffmpeg_metadata+='-metadata genre="Alternative & Punk" ' ;;
-                  *Rock*) ffmpeg_metadata+='-metadata genre="Rock" ' ;;
+                  *Synth-Pop*) metadata+='-metadata genre="Electronica & Dance" ' ;;
+                  *Pop*) metadata+='-metadata genre="Pop" ' ;;
+                  *Indie*) metadata+='-metadata genre="Alternative & Indie" ' ;;
+                  *Industrial*) metadata+='-metadata genre="Industrial Rock" ' ;;
+                  *Electronic*) metadata+='-metadata genre="Electronica & Dance" ' ;;
+                  *Punk*|*Alternative*) metadata+='-metadata genre="Alternative & Punk" ' ;;
+                  *Rock*) metadata+='-metadata genre="Rock" ' ;;
                 esac
               fi
             ;;
           esac
         done
         # shellcheck disable=SC2090
-        [ $flac2mp3_debug -ge 1 ] && echo "Debug|New metadata: ${ffmpeg_metadata//-metadata /}" | log
+        [ $flac2mp3_debug -ge 1 ] && echo "Debug|New metadata: ${metadata//-metadata /}" | log
       else
-        echo "Warn|ffprobe did not return any data when querying track: \"$track\"" | log
+        echo "Warn|ffprobe did not return any data when querying track: '$track'" | log
         change_exit_status 12
       fi
     fi
     
     # Convert the track
     echo "Info|Writing: $newTrack" | log
-    local ffcommand="nice /usr/bin/ffmpeg -loglevel $flac2mp3_ffmpeg_log -nostdin -i \"$(escape_string "$track")\" $flac2mp3_ffmpeg_opts $ffmpeg_metadata \"$(escape_string "$tempTrack")\""
-    execute_ff_command "$ffcommand" "converting track: \"$track\" to \"$tempTrack\""
-
+    local ffcommand="nice /usr/bin/ffmpeg"
+    # Restore IFS
+    IFS=$' \t\n'
+    execute_ff_command "converting track: '$track' to '$tempTrack'" "$ffcommand" -loglevel $flac2mp3_ffmpeg_log -nostdin -i "$track" $flac2mp3_ffmpeg_opts $metadata "$tempTrack"
     local return=$?; [ $return -ne 0 ] && {
       change_exit_status 13
       # Delete the temporary file if it exists
       [ -f "$tempTrack" ] && rm -f "$tempTrack"
       continue
     }
+    IFS=\|
 
     # Check for non-zero size file
     if [ ! -s "$tempTrack" ]; then
-      local message="Error|The new track does not exist or is zero bytes: \"$tempTrack\""
+      local message="Error|The new track does not exist or is zero bytes: '$tempTrack'"
       echo "$message" | log
-      echo "$message" >&2
+      echo_ansi "$message" >&2
       change_exit_status 14
       continue
     fi
@@ -1038,13 +1154,13 @@ function process_tracks {
     # Checking that we're running as root
     if [ "$(id -u)" -eq 0 ]; then
       # Set owner
-      [ $flac2mp3_debug -ge 1 ] && echo "Debug|Changing owner of file \"$tempTrack\"" | log
+      [ $flac2mp3_debug -ge 1 ] && echo "Debug|Changing owner of file '$tempTrack'" | log
       local result
       result=$(chown --reference="$track" "$tempTrack")
       local return=$?; [ $return -ne 0 ] && {
-        local message=$(echo -e "[$return] Error when changing owner of file: \"$tempTrack\"\nchown returned: $result" | awk '{print "Error|"$0}')
+        local message=$(echo -e "[$return] Error when changing owner of file: '$tempTrack'\nchown returned: $result" | awk '{print "Error|"$0}')
         echo "$message" | log
-        echo "$message" >&2
+        echo_ansi "$message" >&2
         change_exit_status 15
       }
     else
@@ -1055,16 +1171,16 @@ function process_tracks {
     local result
     result=$(chmod --reference="$track" "$tempTrack")
     local return=$?; [ $return -ne 0 ] && {
-      local message=$(echo -e "[$return] Error when changing permissions of file: \"$tempTrack\"\nchmod returned: $result" | awk '{print "Error|"$0}')
+      local message=$(echo -e "[$return] Error when changing permissions of file: '$tempTrack'\nchmod returned: $result" | awk '{print "Error|"$0}')
       echo "$message" | log
-      echo "$message" >&2
+      echo_ansi "$message" >&2
       change_exit_status 15
     }
 
     # Do not delete the source file if configured. Skip import.
     # NOTE: Implied that the new track and the original track do not have the same name due to earlier check
     if [ $flac2mp3_keep -eq 1 ]; then
-      [ $flac2mp3_debug -ge 1 ] && echo "Debug|Keeping original: \"$track\"" | log
+      [ $flac2mp3_debug -ge 1 ] && echo "Debug|Keeping original: '$track'" | log
       # Rename the temporary file to the new track name
       rename_track "$tempTrack" "$newTrack"
       local return=$?; [ $return -ne 0 ] && {
@@ -1075,13 +1191,13 @@ function process_tracks {
 
     # If in batch mode, just delete the original file
     if [ "$flac2mp3_type" = "batch" ]; then
-      [ $flac2mp3_debug -ge 1 ] && echo "Debug|Deleting: \"$track\"" | log
+      [ $flac2mp3_debug -ge 1 ] && echo "Debug|Deleting: '$track'" | log
       local result
       result=$(rm -f "$track")
       local return=$?; [ $return -ne 0 ] && {
-        local message=$(echo -e "[$return] Error when deleting file: \"$track\"\nrm returned: $result" | awk '{print "Error|"$0}')
+        local message=$(echo -e "[$return] Error when deleting file: '$track'\nrm returned: $result" | awk '{print "Error|"$0}')
         echo "$message" | log
-        echo "$message" >&2
+        echo_ansi "$message" >&2
         change_exit_status 16
       }
     else
@@ -1089,9 +1205,9 @@ function process_tracks {
       local track_id=$(echo $flac2mp3_trackfiles | jq -crM ".[] | select(.path == \"$track\") | .id")
       delete_track $track_id
       local return=$?; [ $return -ne 0 ] && {
-        local message="Error|[$return] ${flac2mp3_type^} error when deleting the original track: \"$track\". Not importing new track into ${flac2mp3_type^}."
+        local message="Error|[$return] ${flac2mp3_type^} error when deleting the original track: '$track'. Not importing new track into ${flac2mp3_type^}."
         echo "$message" | log
-        echo "$message" >&2
+        echo_ansi "$message" >&2
         change_exit_status 17
         continue
       }
@@ -1107,8 +1223,7 @@ function process_tracks {
     # Add new track to list of tracks to import
     flac2mp3_import_list+="${newTrack}|"
   done
-  # Restore IFS
-  IFS=$' \t\n'
+
   # Remove trailing pipe
   flac2mp3_import_list="${flac2mp3_import_list%|}"
   [ $flac2mp3_debug -ge 1 ] && echo "Debug|Track import list: \"$flac2mp3_import_list\"" | log
@@ -1116,83 +1231,96 @@ function process_tracks {
 function update_database {
   # Call Lidarr API to update database
 
-  # Check for URL
-  if [ "$flac2mp3_type" = "batch" ]; then
+  # Check for Batch mode
+  if [ "${flac2mp3_type,,}" = "batch" ]; then
     [ $flac2mp3_debug -ge 1 ] && echo "Debug|Not calling API while in batch mode." | log
-  elif [ $flac2mp3_keep -eq 1 ]; then
+    return
+  fi
+
+  # Do not update the database if the original file still exists
+  if [ $flac2mp3_keep -eq 1 ]; then
     echo "Info|Original audio file(s) kept, no database update performed." | log
-  elif [ -n "$flac2mp3_api_url" ]; then
-    # Check for artist ID
-    if [ -n "$lidarr_artist_id" ]; then
-      # Scan for files to import into Lidarr
-      export flac2mp3_import_count=$(echo $flac2mp3_import_list | awk -F\| '{print NF}')
-      if [ $flac2mp3_import_count -ne 0 ]; then
-        echo "Info|Preparing to import $flac2mp3_import_count new files. This make take a long time for large libraries." | log
-        if get_import_info; then
-          # Build JSON data for all tracks
-          # NOTE: Tracks with empty track IDs will not appear in the resulting JSON and will therefore not be imported into Lidarr
-          [ $flac2mp3_debug -ge 1 ] && echo "Debug|Building JSON data to import" | log
-          export flac2mp3_json=$(echo $flac2mp3_result | jq -jcM "
-            map(
-              select(.path | inside(\"$flac2mp3_import_list\")) |
-              {path, \"artistId\":$lidarr_artist_id, \"albumId\":$lidarr_album_id, albumReleaseId,\"trackIds\":[.tracks[].id], quality, \"disableReleaseSwitching\":false}
-            )
-          ")
+    return
+  fi
 
-          # Import new files into Lidarr (see issue #39)
-          import_tracks
-          local return=$?; [ $return -ne 0 ] && {
-            local message="Error|[$return] ${flac2mp3_type^} error when importing the new tracks!"
-            echo "$message" | log
-            echo "$message" >&2
-            change_exit_status 17
-          }
-          local jobid="$(echo $flac2mp3_result | jq -crM .id)"
-
-          # Check status of job (see issue #39)
-          check_job $jobid
-          local return=$?; [ $return -ne 0 ] && {
-            case $return in
-              1) local message="Info|${flac2mp3_type^} job ID $jobid is queued. Trusting this will complete and exiting."
-              ;;
-              2) local message="Warn|${flac2mp3_type^} job ID $jobid failed."
-                change_exit_status 17
-              ;;
-              3) local message="Warn|Script timed out waiting on ${flac2mp3_type^} job ID $jobid. Last status was: $(echo $flac2mp3_result | jq -crM .status)"
-                change_exit_status 18
-              ;;
-              10) local message="Error|${flac2mp3_type^} job ID $jobid returned a curl error."
-                change_exit_status 17
-              ;;
-            esac
-            echo "$message" | log
-            echo "$message" >&2
-          }
-        else
-          local message="Error|${flac2mp3_type^} error getting import file list in \"$lidarr_artist_path\" for artist ID $lidarr_artist_id"
-          echo "$message" | log
-          echo "$message" >&2
-          change_exit_status 17
-        fi
-      else
-        local message="Warn|Didn't find any tracks to import."
-        echo "$message" | log
-        echo "$message" >&2
-      fi
-    else
-      # No Artist ID means we can't call the API
-      local message="Warn|Missing environment variable lidarr_artist_id"
-      echo "$message" | log
-      echo "$message" >&2
-      change_exit_status 20
-    fi
-  else
+  # Check for URL
+  if [ -z "$flac2mp3_api_url" ]; then
     # No URL means we can't call the API
     local message="Warn|Unable to determine ${flac2mp3_type^} API URL."
     echo "$message" | log
-    echo "$message" >&2
+    echo_ansi "$message" >&2
     change_exit_status 20
+    return
   fi
+
+  # Check for artist ID
+  if [ -z "$lidarr_artist_id" ]; then
+    # No Artist ID means we can't call the API
+    local message="Warn|Missing environment variable lidarr_artist_id"
+    echo "$message" | log
+    echo_ansi "$message" >&2
+    change_exit_status 20
+    return
+  fi
+
+  # Check the count of files to import into Lidarr
+  export flac2mp3_import_count=$(echo $flac2mp3_import_list | awk -F\| '{print NF}')
+  if [ $flac2mp3_import_count -eq 0 ]; then
+    local message="Warn|Didn't find any tracks to import."
+    echo "$message" | log
+    echo_ansi "$message" >&2
+    return
+  fi
+
+  # Scan for files to import into Lidarr
+  echo "Info|Preparing to import $flac2mp3_import_count new files. This make take a long time for large libraries." | log
+  if ! get_import_info; then
+    local message="Error|${flac2mp3_type^} error getting import file list in '$lidarr_artist_path' for artist ID $lidarr_artist_id"
+    echo "$message" | log
+    echo_ansi "$message" >&2
+    change_exit_status 17
+    return
+  fi
+
+  # Build JSON data for all tracks
+  # NOTE: Tracks with empty track IDs will not appear in the resulting JSON and will therefore not be imported into Lidarr
+  [ $flac2mp3_debug -ge 1 ] && echo "Debug|Building JSON data to import" | log
+  export flac2mp3_json=$(echo $flac2mp3_result | jq -jcM "
+    map(
+      select(.path | inside(\"$flac2mp3_import_list\")) |
+      {path, \"artistId\":$lidarr_artist_id, \"albumId\":$lidarr_album_id, albumReleaseId,\"trackIds\":[.tracks[].id], quality, \"disableReleaseSwitching\":false}
+    )
+  ")
+
+  # Import new files into Lidarr (see issue #39)
+  import_tracks
+  local return=$?; [ $return -ne 0 ] && {
+    local message="Error|[$return] ${flac2mp3_type^} error when importing the new tracks!"
+    echo "$message" | log
+    echo_ansi "$message" >&2
+    change_exit_status 17
+  }
+  local jobid="$(echo $flac2mp3_result | jq -crM .id)"
+
+  # Check status of job (see issue #39)
+  check_job $jobid
+  local return=$?; [ $return -ne 0 ] && {
+    case $return in
+      1) local message="Info|${flac2mp3_type^} job ID $jobid is queued. Trusting this will complete and exiting."
+      ;;
+      2) local message="Warn|${flac2mp3_type^} job ID $jobid failed."
+        change_exit_status 17
+      ;;
+      3) local message="Warn|Script timed out waiting on ${flac2mp3_type^} job ID $jobid. Last status was: $(echo $flac2mp3_result | jq -crM .status)"
+        change_exit_status 18
+      ;;
+      10) local message="Error|${flac2mp3_type^} job ID $jobid returned a curl error."
+        change_exit_status 17
+      ;;
+    esac
+    echo "$message" | log
+    echo_ansi "$message" >&2
+  }
 }
 ### End Functions
 

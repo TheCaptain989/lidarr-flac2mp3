@@ -23,6 +23,7 @@ MD007:
   indent: 2                   # Unordered list indentation
 MD013:
   line_length: 400            # Line length 80 is far too short
+  tables: false               # Don't check line length in tables
 MD022:
   lines_below: 0              # Headings only need a blank line before
 MD025: false                  # Allow multiple top level headings

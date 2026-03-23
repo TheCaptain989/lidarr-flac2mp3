@@ -108,8 +108,20 @@ New file(s) will be placed in the same directory as the original FLAC file(s) (u
 ### Options and Arguments
 The script may be called with optional command-line arguments.
 
-The syntax for the command-line is:  
-`flac2mp3 [{-b|--bitrate} <bitrate> | {-v|--quality} <quality> | {-a|--advanced} "<options>" {-e|--extension} <extension>] [{-f|--file} <audio_file>] [{-k|--keep-file}] [{-o|--output} <directory>] [{-r|--regex} '<regex>'] [{-t|--tags} <taglist>] [{-l|--log} <log_file>] [{-c|--config} <config_file>] [{-d|--debug} [<level>]]`  
+The syntax for the command-line is:
+
+```shell
+flac2mp3.sh [{-b|--bitrate} <bitrate> | {-v|--quality} <quality> | {-a|--advanced} "<options>" {-e|--extension} <extension>]
+            [{-f|--file} <audio_file>]
+            [{-k|--keep-file}]
+            [{-o|--output} <directory>]
+            [{-r|--regex} '<regex>']
+            [{-t|--tags} <taglist>]
+            [{-l|--log} <log_file>]
+            [{-c|--config} <config_file>]
+            [{-d|--debug} [<level>]]
+            [--no-ansi]
+```
 
 <details>
 <summary>Table of Command-Line Arguments</summary>
@@ -118,16 +130,17 @@ Option|Argument|Description
 ---|---|---
 `-b`, `--bitrate`|`<bitrate>`|Sets the output quality in constant bits per second (CBR).<br/>Examples: 160k, 240k, 300000<br/>**Note:** May not be specified with `-v`, `-a`, or `-e`.
 `-v`, `--quality`|`<quality>`|Sets the output variable bit rate (VBR).<br/>Specify a value between 0 and 9, with 0 being the highest quality.<br/>See the [FFmpeg MP3 Encoding Guide](https://trac.ffmpeg.org/wiki/Encode/MP3) for more details.<br/>**Note:** May not be specified with `-b`, `-a`, or `-e`.
-`-a`, `--advanced`<!-- markdownlint-disable-line MD013 -->|`"<options>"`|Advanced ffmpeg options.<br />The specified `options` replace all script defaults and are sent directly to ffmpeg.<br/>The `options` value must be enclosed in quotes.<br/>See [FFmpeg Options](https://ffmpeg.org/ffmpeg.html#Options) for details on valid options, and [Guidelines for high quality audio encoding](https://trac.ffmpeg.org/wiki/Encode/HighQualityAudio) for suggested usage.<br/>**Note:** Requires the `-e` option to also be specified. May not be specified with `-v` or `-b`.<br/>![warning] **WARNING:** You must specify an audio codec (by including a `-c:a <codec>` ffmpeg option) or the resulting file will contain no audio!<br/>![warning] **WARNING:** Invalid `options` could result in script failure!
+`-a`, `--advanced`|`"<options>"`|Advanced ffmpeg options.<br />The specified `options` replace all script defaults and are sent directly to ffmpeg.<br/>The `options` value must be enclosed in quotes.<br/>See [FFmpeg Options](https://ffmpeg.org/ffmpeg.html#Options) for details on valid options, and [Guidelines for high quality audio encoding](https://trac.ffmpeg.org/wiki/Encode/HighQualityAudio) for suggested usage.<br/>**Note:** Requires the `-e` option to also be specified. May not be specified with `-v` or `-b`.<br/>![warning] **WARNING:** You must specify an audio codec (by including a `-c:a <codec>` ffmpeg option) or the resulting file will contain no audio!<br/>![warning] **WARNING:** Invalid `options` could result in script failure!
 `-e`, `--extension`|`<extension>`|Sets the output file extension.<br/>The extension may be prefixed by a dot (".") or not.<br/>Example: .ogg<br/>**Note:** Requires the `-a` option to also be specified. May not be specified with `-v` or `-b`.
 `-f`, `--file`|`<audio_file>`|If included, the script enters **[Batch Mode](#batch-mode)** and converts the specified audio file.<br/>![note] **Do not** use this argument when called from Lidarr!
 `-o`, `--output`|`<directory>`|Converted audio file(s) are saved to `directory` instead of being located in the same directory as the source audio file.<br/>The path will be created if it does not exist.
 `-k`, `--keep-file`| |Do not delete the source file or move it to the Lidarr Recycle bin.<br/>**Note:** This also disables importing the new files into Lidarr after conversion.
 `-r`, `--regex`|`'<regex>'`|Sets the regular expression used to select input files.<br/>The `regex` value should be enclosed in single quotes and escaped properly.<br/>Defaults to `[.]flac$`.
+`-t`, `--tags`|`<taglist>`|Comma separated list of metadata tags to apply automated corrections to.<br/>See [Metadata Corrections](#metadata-corrections) section.
 `-l`, `--log`|`<log_file>`|The log filename<br/>Default of /config/log/flac2mp3.txt
 `-c`, `--config`|`<config_file>`|Lidar XML configuration file<br/>Default is `/config/config.xml`
-`-t`, `--tags`|`<taglist>`|Comma separated list of metadata tags to apply automated corrections to.<br/>See [Metadata Corrections](#metadata-corrections) section.
 `-d`, `--debug`|`[<level>]`|Enables debug logging. Level is optional.<br/>Default of 1 (low).<br/>2 includes JSON and FFmpeg output.<br/>3 contains even more JSON output.
+`--no-ansi`||Force disable ANSI color codes in terminal output
 `--help`| |Display help and exit.
 `--version`| |Display version and exit.
 
