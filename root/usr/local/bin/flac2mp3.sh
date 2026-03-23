@@ -1133,7 +1133,8 @@ function process_tracks {
     local ffcommand="nice /usr/bin/ffmpeg"
     # Restore IFS
     IFS=$' \t\n'
-    execute_ff_command "converting track: '$track' to '$tempTrack'" "$ffcommand" -loglevel $flac2mp3_ffmpeg_log -nostdin -i "$track" $flac2mp3_ffmpeg_opts "$metadata" "$tempTrack"
+    # shellcheck disable=SC2090
+    execute_ff_command "converting track: '$track' to '$tempTrack'" "$ffcommand" -loglevel $flac2mp3_ffmpeg_log -nostdin -i "$track" $flac2mp3_ffmpeg_opts $metadata "$tempTrack"
     local return=$?; [ $return -ne 0 ] && {
       change_exit_status 13
       # Delete the temporary file if it exists
