@@ -932,16 +932,6 @@ function wait_if_locked {
   fi
   return $return
 }
-function escape_string {
-  # Escape special characters in string for use in ffmpeg commands
-
-  local input="$1" # Input string to escape
-
-  # Escape backslashes, double quotes, and dollar signs
-  # shellcheck disable=SC2001
-  local output="$(echo "$input" | sed -e 's/[`"\\$]/\\&/g')"
-  echo "$output"
-}
 function execute_ff_command {
   # Execute ffmpeg or ffprobe commands
 
