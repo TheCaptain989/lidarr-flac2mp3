@@ -134,15 +134,15 @@ Option|Argument|Description
 `-e`, `--extension`|`<extension>`|Sets the output file extension.<br/>The extension may be prefixed by a dot (".") or not.<br/>Example: .ogg<br/>**Note:** Requires the `-a` option to also be specified. May not be specified with `-v` or `-b`.
 `-f`, `--file`|`<audio_file>`|If included, the script enters **[Batch Mode](#batch-mode)** and converts the specified audio file.<br/>![note] **Do not** use this argument when called from Lidarr!
 `-o`, `--output`|`<directory>`|Converted audio file(s) are saved to `directory` instead of being located in the same directory as the source audio file.<br/>The path will be created if it does not exist.
-`-k`, `--keep-file`| |Do not delete the source file or move it to the Lidarr Recycle bin.<br/>**Note:** This also disables importing the new files into Lidarr after conversion.
+`-k`, `--keep-file`||Do not delete the source file or move it to the Lidarr Recycle bin.<br/>**Note:** This also disables importing the new files into Lidarr after conversion.
 `-r`, `--regex`|`'<regex>'`|Sets the regular expression used to select input files.<br/>The `regex` value should be enclosed in single quotes and escaped properly.<br/>Defaults to `[.]flac$`.
 `-t`, `--tags`|`<taglist>`|Comma separated list of metadata tags to apply automated corrections to.<br/>See [Metadata Corrections](#metadata-corrections) section.
 `-l`, `--log`|`<log_file>`|The log filename<br/>Default of /config/log/flac2mp3.txt
 `-c`, `--config`|`<config_file>`|Lidar XML configuration file<br/>Default is `/config/config.xml`
 `-d`, `--debug`|`[<level>]`|Enables debug logging. Level is optional.<br/>Default of 1 (low).<br/>2 includes JSON and FFmpeg output.<br/>3 contains even more JSON output.
 `--no-ansi`||Force disable ANSI color codes in terminal output
-`--help`| |Display help and exit.
-`--version`| |Display version and exit.
+`--help`||Display help and exit.
+`--version`||Display version and exit.
 
 </details>
 
