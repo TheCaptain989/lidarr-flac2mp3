@@ -67,27 +67,42 @@ Development Container info:
 
       </details>
       <details>
-      <summary>Synology Screenshot</summary>
+      <summary>Synology DSM 6 Screenshot</summary>
 
-      *Example Synology Configuration*  
+      *Example Synology DSM 6 Configuration*  
       ![flac2mp3](.assets/lidarr-synology.png "Synology container settings")  
 
       </details>
 
    2. Start the container.
 
-2. Configure a custom script from Lidarr's *Settings* > *Connect* screen and type the following in the **Path** field:  
-   `/usr/local/bin/flac2mp3.sh`
+2. Either:
+    1. Configure a custom script from Lidarr's *Settings* > *Connect* screen and type the following in the **Path** field:  
+        `/usr/local/bin/flac2mp3.sh`
 
-   <details>
-   <summary>Screenshot</summary>
+        <details>
+        <summary>Screenshot</summary>
 
-   *Example Custom Script*  
-   ![lidarr-flac2mp3](.assets/lidarr-custom-script.png "Lidarr Custom Script dialog")
+        *Example Custom Script*  
+        ![lidarr-flac2mp3](.assets/lidarr-custom-script.png "Lidarr Custom Script dialog")
 
-   </details>
+        </details>
 
-   This will use the defaults to create a 320Kbps MP3 file.
+    *or*
+
+    2. Configure an [import script](#import-mode "Import Mode") from Lidarr's *Settings* > *Media Management* > *Importing* > *Import Using Script* screen and type the following in the **Import Script Path** field:  
+        `/usr/local/bin/flac2mp3.sh`
+
+        <details>
+        <summary>Screenshot</summary>
+
+        *Example Import Script*  
+        ![flac2mp3 import script](.assets/lidarr-import.png "Lidarr Import Script dialog")
+
+        </details>
+
+  This will use the defaults to create a 320Kbps MP3 file.
+
 
 > [!IMPORTANT]
 > For any other setting, you **must** use one of the supported methods to pass arguments to the script.  See the [Command-Line Syntax](#command-line-syntax) section below.
@@ -96,10 +111,10 @@ Development Container info:
 New file(s) will be placed in the same directory as the original FLAC file(s) (unless redirected with the `--output` option below) with permissions preserved. Existing files with the same track name will be overwritten. Owner is preserved if the script is executed as root.
 
 > [!TIP]
-> By default, if you've configured Lidarr's **Recycle Bin** path correctly, the original audio file will be moved there.  
+> By default, if you've configured Lidarr's **Recycle Bin** path correctly, the original audio file will be moved there, unless you're in Import mode.  
 
 > [!CAUTION]
-> If you have *not* configured the Recycle Bin, the original FLAC audio file(s) will be deleted and permanently lost.  This behavior may be modified with the `--keep-file` option.
+> If you have *not* configured the Recycle Bin, the original FLAC audio file(s) will be deleted and permanently lost.  This behavior may be modified with the `--keep-file` option.  When in Import mode, the source video is always deleted.
 
 ## Command-Line Syntax
 > [!NOTE]
@@ -289,15 +304,25 @@ In a `docker run` command, it would be:
 
 </details>
 <details>
-<summary>Synology Screenshot</summary>
+<summary>Synology DSM 6 Screenshot</summary>
 
-*Example Synology Configuration*  
+*Example Synology DSM 6 Configuration*  
 ![flac2mp3](.assets/lidarr-synology-2.png "Synology container settings")
 
 </details>
 
-## Triggers
-The only events/notification triggers that are supported are **On Release Import** and **On Upgrade**. The script will log an error if executed by any other trigger.
+## Custom Script Triggers
+The only events/notification triggers that are supported in Custom Script mode are **On Release Import** and **On Upgrade**. The script will log an error if executed by any other trigger.
+
+## Import Mode
+When entered in Lidarr's *Import Script Path* field, the script is placed in Import mode.  In this mode, Lidarr will run the script to pickup the downloaded audio tracks  from your download client instead of using the built-in functionality.
+This mode allows the script to process the audio tracks before the files are fully added to the library, gaining some efficiency by converting and moving the tracks at the same time.
+However, because the Lidarr database is not updated before the conversion step, this introduces some inherent limitations.
+
+### Script Execution Differences in Import Mode
+In Import mode, the script behaves similarly to Custom Script mode but with the following differences:
+* *Outdated Lidarr entries will exist.*<br/>A manual Refresh & Scan will replace the outdated entries with the correct file names.  The script cannot correct this due to the database update timing.
+* *Original audio files are deleted.*<br/>The Recycle Bin function is not available.
 
 ## Batch Mode
 Batch mode allows the script to be executed independently of Lidarr.  It converts the file specified on the command-line and ignores any environment variables that are normally expected to be set by the music management program.
