@@ -52,7 +52,9 @@ test_import_mode() {
 
 test_import_mode_event() {
   lidarr_transfermode="Move"
+  # shellcheck disable=SC2034
   lidarr_sourcepath="/#downloads/music/01.flac"
+  # shellcheck disable=SC2034
   lidarr_destinationpath="/music/01.flac"
   initialize_variables
   initialize_mode_variables

@@ -103,7 +103,6 @@ Development Container info:
 
   This will use the defaults to create a 320Kbps MP3 file.
 
-
 > [!IMPORTANT]
 > For any other setting, you **must** use one of the supported methods to pass arguments to the script.  See the [Command-Line Syntax](#command-line-syntax) section below.
 
@@ -321,7 +320,7 @@ However, because the Lidarr database is not updated before the conversion step, 
 
 ### Script Execution Differences in Import Mode
 In Import mode, the script behaves similarly to Custom Script mode but with the following differences:
-* *Outdated Lidarr entries will exist.*<br/>A manual Refresh & Scan will replace the outdated entries with the correct file names.  The script cannot correct this due to the database update timing.
+* *Outdated Lidarr entries will exist.*<br/>A manual Refresh & Scan will replace the outdated entries with the correct filenames.  The script cannot correct this due to the database update timing.
 * *Original audio files are deleted.*<br/>The Recycle Bin function is not available.
 
 ## Batch Mode
