@@ -872,6 +872,11 @@ function check_config_file {
   export flac2mp3_version="$(echo $flac2mp3_result | jq -crM .version)"
   [ $flac2mp3_debug -ge 1 ] && echo "Debug|Detected ${flac2mp3_type^} version $flac2mp3_version" | log
 
+  # Import mode will not have any audio tracks until after import 
+  if [ "${flac2mp3_mode,,}" = "import" ]; then
+    return
+  fi
+
   # Get album trackfile info. Need the IDs to delete the old tracks.
   if get_trackfile_info; then
     export flac2mp3_trackfiles="$flac2mp3_result"
@@ -1303,10 +1308,11 @@ function process_tracks {
     # Add new track to list of tracks to import
     flac2mp3_import_list+="${newTrack}|"
   done
-
+  # Restore IFS
+  IFS=$' \t\n'
   # Remove trailing pipe
   flac2mp3_import_list="${flac2mp3_import_list%|}"
-  [ $flac2mp3_debug -ge 1 ] && echo "Debug|Track import list: \"$flac2mp3_import_list\"" | log
+  [ $flac2mp3_debug -ge 1 ] && echo "Debug|Track import list: $flac2mp3_import_list" | log
 }
 function update_database {
   # Call Lidarr API to update database

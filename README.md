@@ -320,7 +320,8 @@ However, because the Lidarr database is not updated before the conversion step, 
 
 ### Script Execution Differences in Import Mode
 In Import mode, the script behaves similarly to Custom Script mode but with the following differences:
-* *Outdated Lidarr entries will exist.*<br/>A manual Refresh & Scan will replace the outdated entries with the correct filenames.  The script cannot correct this due to the database update timing.
+* *The script will execute once per imported track.*<br/>Lidarr calls the script for each track, so importing an album with 10 tracks will execute the script 10 times.
+* *Outdated Lidarr entries might exist.*<br/>A manual Refresh & Scan will replace any outdated entries with the correct filenames.  The script cannot correct this due to the database update timing.
 * *Original audio files are deleted.*<br/>The Recycle Bin function is not available.
 
 ## Batch Mode
