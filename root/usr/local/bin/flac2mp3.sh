@@ -494,14 +494,14 @@ function initialize_mode_variables {
   fi
 
   # Mode specific variable assignment
-  if [[ "${flac2mp3_mode,,}" = "batch" ]]; then
+  if [ "${flac2mp3_mode,,}" == "batch" ]; then
     # Batch mode
     export flac2mp3_type="batch"
     export batch_eventtype="Convert"
     local event_var="${flac2mp3_type,,}_eventtype"
   else
     # Custom Script or Import mode
-    if [[ "${flac2mp3_type,,}" = "lidarr" ]]; then
+    if [ "${flac2mp3_type,,}" == "lidarr" ]; then
       # Lidarr
       # shellcheck disable=SC2154
       export flac2mp3_tracks="$lidarr_addedtrackpaths"
@@ -521,7 +521,7 @@ function initialize_mode_variables {
     local event_var="${flac2mp3_type,,}_eventtype"
     
     # Import mode overrides
-    if [[ "${flac2mp3_mode,,}" = "import" ]]; then
+    if [ "${flac2mp3_mode,,}" == "import" ]; then
       local sourcepath_var="${flac2mp3_type,,}_sourcepath"
       local destinationpath_var="${flac2mp3_type,,}_destinationpath"
       local sourcepath="${!sourcepath_var}"
@@ -873,7 +873,7 @@ function check_config_file {
   [ $flac2mp3_debug -ge 1 ] && echo "Debug|Detected ${flac2mp3_type^} version $flac2mp3_version" | log
 
   # Import mode will not have any audio tracks until after import 
-  if [ "${flac2mp3_mode,,}" = "import" ]; then
+  if [ "${flac2mp3_mode,,}" == "import" ]; then
     return
   fi
 
@@ -1126,6 +1126,7 @@ function process_tracks {
       # Continue to move the file in Import mode
       if [ "${flac2mp3_mode,,}" == "import" ]; then
         [ $flac2mp3_debug -ge 1 ] && echo "Debug|Only importing track that didn't match regex: $track" | log
+        echo "Info|Importing '$flac2mp3_newtracks'" | log
         move_track "$track" "$flac2mp3_newtracks"
       else
         [ $flac2mp3_debug -ge 1 ] && echo "Debug|Skipping track that did not match regex: $track" | log
@@ -1349,9 +1350,13 @@ function update_database {
     return
   fi
 
-  # Check the count of files to import into Lidarr
+  # Check the count of files to import into Lidarr when not in Import mode
   export flac2mp3_import_count=$(echo $flac2mp3_import_list | awk -F\| '{print NF}')
   if [ $flac2mp3_import_count -eq 0 ]; then
+    # Getting here in Import mode means the regex didn't match any tracks, so we moved the track without adding to the import list.
+    if [ "${flac2mp3_mode,,}" == "import" ]; then
+      return
+    fi
     local message="Warn|Didn't find any tracks to import."
     echo "$message" | log
     echo_ansi "$message" >&2
