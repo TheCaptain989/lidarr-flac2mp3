@@ -38,14 +38,14 @@ test_lidarr_test_event() {
 test_lidarr_version() {
   fake get_trackfile_info :
   check_eventtype
-  check_config
+  check_config_file
   assert_within_delta 3 ${flac2mp3_version/.*/} 2
 }
 
 test_lidarr_call_api_with_json() {
   fake get_trackfile_info :
   check_eventtype
-  check_config
+  check_config_file
   call_api 0 "Creating a test tag." "POST" "tag" '{"label":"test"}'
   assert_equals '{"label":"test","id":1}' "$(echo $flac2mp3_result | jq -jcM)"
 }
@@ -53,7 +53,7 @@ test_lidarr_call_api_with_json() {
 test_lidarr_call_api_with_urlencode() {
   fake get_trackfile_info :
   check_eventtype
-  check_config
+  check_config_file
   call_api 0 "Getting tmp filesystem info." "GET" "filesystem" "path=/tmp/"
   assert_equals '{"parent":"/","directories":[],"files":[]}' "$(echo $flac2mp3_result | jq -jcM)"
 }
@@ -80,7 +80,7 @@ test_lidarr_z02_convert_music() {
   initialize_mode_variables
   check_eventtype
   log_script_start
-  check_config
+  check_config_file
   set_ffmpeg_parameters
   process_tracks
   update_database
@@ -91,7 +91,7 @@ test_lidarr_z03_artist_delete() {
   # fake log _log
   # flac2mp3_debug=1
   fake get_trackfile_info :
-  check_config
+  check_config_file
   # Read in values from first test
   flac2mp3_result="$(cat "$PWD/$album_dir/${test_track2%.flac}.json")"
   lidarr_artist_path="$PWD/$artist_dir"
@@ -104,7 +104,7 @@ test_lidarr_z03_artist_delete() {
 }
 
 load_music() {
-  check_config
+  check_config_file
   call_api 0 "Create root folder." "POST" "rootfolder" "{\"name\":\"Test Root\", \"path\":\"$PWD\", \"defaultMetadataProfileId\":1, \"defaultQualityProfileId\":1}"
   call_api 0 "Adding artist to Lidarr." "POST" "artist" "{\"qualityProfileId\":1, \"metadataProfileId\":1, \"artistName\":\"The Germs\", \"foreignArtistId\":\"42c4b58d-2e28-41d4-bfe5-4edee68386cf\", \"path\":\"$PWD/$artist_dir\", \"rootFolderPath\":\"$PWD\", \"monitored\":true}"
   lidarr_artist_id=$(echo $flac2mp3_result | jq -crM '.id?')
@@ -121,5 +121,5 @@ load_music() {
 
 teardown_suite() {
   rm -f -d "./flac2mp3.txt" $album_dir/$download_track "$album_dir/${test_track2%.flac}.mp3" "$album_dir/${test_track2%.flac}.json" "$album_dir/$test_track2" "$album_dir" "$artist_dir"
-  unset lidarr_eventtype lidarr_addedtrackpaths flac2mp3_config flac2mp3_version
+  unset lidarr_eventtype lidarr_addedtrackpaths flac2mp3_arr_config flac2mp3_version
 }

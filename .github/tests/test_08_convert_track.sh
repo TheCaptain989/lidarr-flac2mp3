@@ -63,14 +63,14 @@ test_alac() {
 }
 
 test_track_with_special_characters() {
-  fake log _log
-  flac2mp3_debug=1
+  # fake log _log
+  # flac2mp3_debug=1
   process_command_line -f "$test_track4"
   check_tracks
   set_ffmpeg_parameters
   process_tracks
-  assert "test ! -f \"$(escape_string "$test_track4")\"" && \
-  assert "test -f \"$(escape_string "${test_track4%.flac}.mp3")\""
+  assert "test ! -f '${test_track4}'" && \
+  assert "test -f '${test_track4%.flac}.mp3'"
 }
 
 teardown_suite() {
