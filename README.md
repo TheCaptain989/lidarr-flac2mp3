@@ -113,7 +113,7 @@ New file(s) will be placed in the same directory as the original FLAC file(s) (u
 > By default, if you've configured Lidarr's **Recycle Bin** path correctly, the original audio file will be moved there, unless you're in Import mode.  
 
 > [!CAUTION]
-> If you have *not* configured the Recycle Bin, the original FLAC audio file(s) will be deleted and permanently lost.  This behavior may be modified with the `--keep-file` option.  When in Import mode, the source video is always deleted.
+> If you have *not* configured the Recycle Bin, the original FLAC audio file(s) will be deleted and permanently lost.  This behavior may be modified with the `--keep-file` option.  When in Import mode, the source audio track is always deleted.
 
 ## Command-Line Syntax
 > [!NOTE]
