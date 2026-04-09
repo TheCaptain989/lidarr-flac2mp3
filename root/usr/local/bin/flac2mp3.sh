@@ -1217,7 +1217,7 @@ function process_tracks {
           esac
         done
         # shellcheck disable=SC2090
-        [ $flac2mp3_debug -ge 1 ] && echo "Debug|New metadata: $(echo ${metadata[*]} | sed -E 's/-metadata //g')" | log
+        [ $flac2mp3_debug -ge 1 ] && echo "Debug|New metadata: $(echo "${metadata[@]}" | sed -E 's/-metadata //g')" | log
       else
         echo "Warn|ffprobe did not return any data when querying track: '$track'" | log
         change_exit_status 12
