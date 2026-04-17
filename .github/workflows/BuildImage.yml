@@ -70,9 +70,6 @@ jobs:
           VALIDATE_BASH: true
           BASH_SEVERITY: style
           BASH_FILE_NAME: .shellcheckrc
-          # Adding this here for now because the config file does not work
-          # SHELLCHECK_OPTS: '--exclude SC1090,SC1091,SC2086,SC2155,SC2166'
-          # Maybe fixed in v7?
           VALIDATE_BASH_EXEC: true
           VALIDATE_DOCKERFILE_HADOLINT: true
           VALIDATE_GITLEAKS: true
@@ -102,7 +99,7 @@ jobs:
 
       - name: Incrementing version
         id: semantic_version
-        uses: paulhatch/semantic-version@v5.4.0
+        uses: paulhatch/semantic-version@v6
         with:
             search_commit_body: true
 
