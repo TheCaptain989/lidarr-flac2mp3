@@ -18,6 +18,8 @@ RUN \
 FROM scratch
 ARG MOD_VERSION
 
+# Add labels. maintainer is requested by linuxserver.io and the rest are OCI labels
+LABEL maintainer="TheCaptain989"
 LABEL org.opencontainers.image.title=lidarr-flac2mp3
 LABEL org.opencontainers.image.description="A Docker Mod to Lidarr to automatically convert FLAC files to MP3s, or other format"
 LABEL org.opencontainers.image.version="${MOD_VERSION}"

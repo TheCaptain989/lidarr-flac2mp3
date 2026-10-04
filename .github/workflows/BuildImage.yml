@@ -20,7 +20,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
 
       - name: Start Lidarr
         run: |
@@ -59,13 +59,13 @@ jobs:
       statuses: write
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
         with:
           # Full git history is needed to get a proper list of changed files within `super-linter`
           fetch-depth: 0
 
       - name: Lint Code Base
-        uses: super-linter/super-linter/slim@v8
+        uses: super-linter/super-linter/slim@v9
         env:
           VALIDATE_BASH: true
           BASH_SEVERITY: style
@@ -96,13 +96,13 @@ jobs:
       DOCKERPASS: ${{ secrets.DOCKERPASS }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
         with:
             fetch-depth: 0  # Needed for semantic_version to work correctly
 
       - name: Incrementing version
         id: semantic_version
-        uses: paulhatch/semantic-version@v5.4.0
+        uses: paulhatch/semantic-version@v6.0.4
         with:
             search_commit_body: true
 
